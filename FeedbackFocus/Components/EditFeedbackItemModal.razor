@@ -1,0 +1,104 @@
+﻿@using FeedbackFocus.Models;
+@inject FeedbackFocus.Services.FeedbackService _feedbackItemService
+
+<div class="modal @ModalClass" tabindex="-1" role="dialog" style="display:@ModalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Feedback</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => Close()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+    <form>
+          
+            <input type="hidden" class="form-control" id="AssessmentId" @bind-value="@feedbackItem.AssessmentId">
+
+
+        <div class="mb-3">
+            <label for="LastName" class="form-label">Last Name</label>
+            <input type="text" class="form-control" id="LastName" @bind-value="@feedbackItem.LastName">
+        </div>
+
+        <div class="mb-3">
+            <label for="FirstName" class="form-label">First Name</label>
+            <input type="text" class="form-control" id="FirstName" @bind-value="@feedbackItem.FirstName">
+        </div>
+
+        <div class="mb-3">
+            <label for="Username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="Username" @bind-value="@feedbackItem.Username">
+        </div>
+        <div class="mb-3">
+            <label for="Grade" class="form-label">Grade</label>
+            <input type="number" step="0.01" class="form-control" id="Grade" @bind-value="@feedbackItem.Grade">
+        </div>
+        <div class="mb-3">
+            <label for="FeedbackToLearner" class="form-label">Feedback To Learner</label>
+            <textarea class="form-control" id="FeedbackToLearner" @bind="@feedbackItem.FeedbackToLearner"></textarea>
+        </div>
+    </form>
+</div>
+
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @onclick="() => SaveFeedbackItem()">Save</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="() => Close()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (ShowBackdrop)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private FeedbackItem feedbackItem = new();
+
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    public bool ShowBackdrop = false;
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+    [Parameter]
+    public Guid AssessmentId { get; set; }
+
+
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        feedbackItem.AssessmentId = AssessmentId;
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Open(FeedbackItem fbi)
+    {
+        feedbackItem = fbi;
+        ModalDisplay = "block;";
+        ModalClass = "Show";
+        ShowBackdrop = true;
+        StateHasChanged();
+    }
+
+    public async Task Close()
+    {
+        ModalDisplay = "none";
+        ModalClass = "";
+        ShowBackdrop = false;
+        await OnClose.InvokeAsync(null);
+        StateHasChanged();
+    }
+
+    private async void SaveFeedbackItem()
+    {
+        Close();
+        await _feedbackItemService.SaveFeedback(feedbackItem);
+        await OnClose.InvokeAsync(null);
+        StateHasChanged();
+    }
+}

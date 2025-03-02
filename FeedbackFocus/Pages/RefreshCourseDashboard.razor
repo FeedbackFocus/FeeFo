@@ -1,0 +1,25 @@
+﻿@page "/refresh-filter/{Page}"
+@using FeedbackFocus.Services;
+@inject NavigationManager _navigationManager;
+@inject CourseDashboardService _crsSrvc;
+@code {
+    [Parameter]
+    public string Page { get; set; }
+    override protected async Task OnInitializedAsync()
+    {
+        if (Page == "Course")
+        {
+            _navigationManager.NavigateTo("/course-dashboard");
+        }
+        else if (Page == "Assessment")
+        {
+            _navigationManager.NavigateTo("/assessment-dashboard");
+        }
+        else if (Page == "Student")
+        {
+            _navigationManager.NavigateTo("/student-dashboard");
+        }
+        //await _crsSrvc.RefreshBaseEmotionData();
+
+    }
+}

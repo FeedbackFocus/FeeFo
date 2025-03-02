@@ -1,0 +1,206 @@
+﻿@page "/courseassignments/{CourseId}"
+@inject FeedbackFocus.Services.CourseService _courseService;
+@inject FeedbackFocus.Services.AssessmentService _assignmentService;
+@inject FeedbackFocus.Services.EmotionAnalysisService _emotionAnalysisService;
+@inject FeedbackFocus.Services.SentimentAnalysisService _sentimentAnalysisService;
+@inject NavigationManager _navManager
+@using FeedbackFocus.Components
+@using FeedbackFocus.Components.FileParsing
+@using FeedbackFocus.Data;
+@using FeedbackFocus.Models;
+@using FeedbackFocus.Services;
+@using SqliteWasmHelper;
+@using System.Linq;
+
+
+<div class="d-flex align-items-center">
+    <button class="btn" onclick="window.history.back();">
+        <span class="oi oi-arrow-thick-left" aria-hidden="true"></span>
+    </button>
+    <h3 class="mb-0 ml-2">Course</h3>
+</div>
+
+@if (course != null)
+{
+    <div class="card shadow mb-4">
+        <div style="position: absolute; top: 5px; right: 5px;">
+            <button class="btn btn-primary btn-sm" @onclick="() => EditCourse(course)">
+                <span class="oi oi-pencil"></span> <!-- or use an appropriate icon -->
+            </button>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">@course.Name</h5>
+            <h6 class="card-subtitle mb-2 text-muted">@course.CourseCode</h6>
+            <p class="card-text">@course.Semester, @course.Year</p>
+            <a href="#" class="card-link">Course Details</a>
+        </div>
+        <div class="card-footer text-muted">
+            <!-- Single Add Assignment Button -->
+            <button type="button" class="btn btn-primary btn-lg mb-3" style="box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15);" @onclick="() => Open(course)">
+                <i class="fas fa-plus"></i> Add Assessment
+            </button>
+            <FeedbackFocus.Components.EditCourseModal @ref="ModalEditCourse" OnClose="RefreshAssessments"></FeedbackFocus.Components.EditCourseModal>
+
+            <FeedbackFocus.Components.AddAssignmentModal @ref="Modal" OnClose="RefreshAssessments"></FeedbackFocus.Components.AddAssignmentModal>
+            <EditAssignmentModal @ref="ModalEdit" OnClose="RefreshAssessments"></EditAssignmentModal>
+        </div>
+    </div>
+
+    <h3>Course Assessments</h3>
+
+    <div class="d-flex flex-wrap">
+        @foreach (var x in assignmentList)
+        {
+            <div class="card m-2" style="width: 18rem;">
+                <div style="position: absolute; top: 5px; right: 5px;">
+
+                    <button class="btn btn-primary btn-sm" @onclick="() => Edit(x)">
+                        <span class="oi oi-pencil"></span> <!-- or use an appropriate icon -->
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p>
+                        @{
+                            int countFeedback = x.Feedback.Count();
+                            int countBlankFeedback = x.Feedback.Where(z => z.FeedbackToLearner == null || z.FeedbackToLearner.Trim() == "").Count();
+                            int analysisSum = x.Feedback.Sum(fb => fb.Analysis.Count);
+                            bool analysisComplete = ((countFeedback - countBlankFeedback) * 10) == analysisSum && analysisSum != 0;
+                        }
+                        Assessment: @x.Name
+                        <br>
+                        Number of Feedback Items: @countFeedback
+                        <br>
+                        Blank Feedback: @countBlankFeedback
+                        <br />
+                        Max Score: @x.MaxScore
+                        <br />
+                        @if (analysisComplete)
+                        {
+                        @:Analysis: <span>✔️</span> 
+                        } else
+                        {
+
+                      
+                            @if (analyzing && x.Id == analysisId)
+                            {
+                            <p>Analysis:</p>
+                                <p>Progress: @progressValue%</p>
+                            }
+                            else
+                            {
+                            <p>Analysis: <button class="btn btn-primary" @onclick="@(() => AnalyzeAll(x.Id,x.Feedback))">Run</button></p>
+                            }
+                        }
+                        <br />
+                        @if (x.Feedback.Count() > 0)
+                        {
+                            @:Average Score: @Math.Round(@x.Feedback.Average(z => z.Grade), 2)
+                        }
+                        <br />
+                        <button class="btn btn-primary" @onclick="() => NavigateToFeedback(x.Id)">View</button>
+                        <button class="btn btn-danger" @onclick="()=>ShowDelete(x)">Delete</button>
+                        <BlackboardImporter AssessmentId="@x.Id" OnProcessingComplete="RefreshAssessments" />
+
+                    </p>
+                    @* <button class="btn btn-success" @onclick="() => FindCourseAssignment(x.Id)">Assignments</button>
+            <button class="btn btn-danger" @onclick="() => Delete(x.Id)">Delete</button>*@
+
+                </div>
+            </div>
+        }
+    </div>
+}
+<DeleteModal @ref="DeleteModal" OnClose="RefreshAssessments" />
+
+@code {
+    bool analyzing = false;
+    Guid analysisId = Guid.Empty;
+    private int progressValue = 0;
+    private AddAssignmentModal Modal { get; set; }
+    private EditAssignmentModal ModalEdit { get; set; }
+    private FeedbackFocus.Components.EditCourseModal ModalEditCourse { get; set; }
+    [Parameter]
+    public string CourseId { get; set; }
+    DeleteModal DeleteModal { get; set; }
+    private Course course = null;
+    private List<Assessment> assignmentList = new();
+    private void NavigateToFeedback(Guid id)
+    {
+        _navManager.NavigateTo($"/assessmentfeedback/{id}");
+    }
+
+    public async Task ShowDelete(dynamic obj)
+    {
+        DeleteModal.SetObject(obj);
+        DeleteModal.Open();
+    }
+    public async Task Delete(Guid Id)
+    {
+        await _assignmentService.Delete(Id);
+        StateHasChanged();
+    }
+    protected async override Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await RefreshAssessments();
+        StateHasChanged();
+    }
+
+    private async Task RefreshAssessments()
+    {
+        course = await _courseService.GetCourseById(Guid.Parse(CourseId));
+        assignmentList = await _assignmentService.GetAssessments();
+        assignmentList = assignmentList.Where(a => a.CourseId == Guid.Parse(CourseId)).OrderBy(x => x.DueDate).ToList();
+        _navManager.NavigateTo($"/courseassignments/{CourseId}");
+
+    }
+    private async Task Open(Course c)
+    {
+        await Modal.SetCourse(c);
+        Modal.Open();
+    }
+
+    private async Task Edit(Assessment a)
+    {
+        ModalEdit.Open(a);
+    }
+    private async void EditCourse(Course c)
+    {
+        ModalEditCourse.Open(c);
+        course = await _courseService.GetCourseById(course.Id);
+        StateHasChanged();
+    }
+    private async void AnalyzeAll(Guid id,List<FeedbackItem> lstItems)
+    {
+        analysisId = id;
+        int totalItems = lstItems.Count();
+        int processedItems = 0;
+        analyzing = true;
+        StateHasChanged();
+
+        foreach (var x in lstItems)
+        {
+            if (_emotionAnalysisService.GetEmotionAnalysis(x).Result.Count() == 0 && !string.IsNullOrEmpty(x.FeedbackToLearner))
+            {
+                await _emotionAnalysisService.AnalyzeAssignmentFeedback(x);
+            }
+
+            if (_emotionAnalysisService.GetSentimentAnalysis(x).Result.Count() == 0 && !string.IsNullOrEmpty(x.FeedbackToLearner))
+            {
+                await _sentimentAnalysisService.AnalyzeAssignmentFeedback(x);
+            }
+
+            processedItems++;
+            progressValue = (int)((double)processedItems / totalItems * 100);
+            StateHasChanged();
+        }
+
+        progressValue = 100;
+        //lstItems = (await _feedbackService.GetFeedback()).Where(x => x.AssessmentId.ToString() == this.AssessmentId).ToList();
+        analyzing = false;
+        StateHasChanged();
+        await Task.Delay(1000);
+        _navManager.NavigateTo($"/courseassignments/{CourseId}",true);
+    }
+
+}

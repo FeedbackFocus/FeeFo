@@ -1,0 +1,55 @@
+﻿@page "/student-dashboard"
+@using System.Diagnostics.CodeAnalysis;
+@using System.ComponentModel.DataAnnotations;
+@using BlazorBootstrap
+@using Blazorise
+@using FeedbackFocus.Components.StaticResource;
+@using FeedbackFocus.Services
+@inject StudentDashboardService StudentDashboardService
+@inject NavigationManager _navigationManager
+
+<h3>Student Dashboard</h3>
+
+@if (StudentDashboardService.CourseData != null && StudentDashboardService.CourseData.Count > 0 && StudentDashboardService.ready)
+{
+<FeedbackFocus.Components.Filters.StudentFilter />
+    <div class="row">
+        <FeedbackFocus.Components.CardInfo Value="@StudentDashboardService.CountSelectedStudents.ToString()" CssClass="card bg-primary text-white" CssSymbol="oi oi-book" Measure="Number of students being displayed" Link="/studentFeedbackInfo" />
+        <FeedbackFocus.Components.CardInfo Value="@StudentDashboardService.CountCourses.ToString()" CssClass="card bg-secondary text-white" CssSymbol="oi oi-book" Measure="Number of courses in the data set" Link="/studentCoursesInfo" />
+        <FeedbackFocus.Components.CardInfo Value="@StudentDashboardService.CountWords.ToString()" CssClass="card bg-info text-white" CssSymbol="oi oi-book" Measure="Total words written in feedback" Link="/studentFeedbackDetailInfo" />
+        <FeedbackFocus.Components.CardInfo Value="@(StudentDashboardService.AverageSentimentPositive +" / "+StudentDashboardService.AverageSentimentNeutral+" / "+StudentDashboardService.AverageSentimentNegative)" CssClass="card bg-warning text-white" CssSymbol="oi oi-book" Measure="Average Sentiment Score (Pos/Neu/Neg)" />
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <h3>Overview</h3>
+        </div>
+        <FeedbackFocus.Components.StudentCharts.Student_Emotion_Overall/>
+        <FeedbackFocus.Components.StudentCharts.Student_Emotion/>
+        <FeedbackFocus.Components.StudentCharts.Student_Sentiment/>
+        <FeedbackFocus.Components.StudentCharts.Student_Grade_Distribution/>
+        <FeedbackFocus.Components.StudentCharts.Student_Average_Grades/>
+        <FeedbackFocus.Components.StudentCharts.Student_Total_Words/>
+    </div>
+} else
+{
+                <Callout>
+        <strong>No Data Detected</strong>. To use the student dashboard you must enter some data, <a href="/courses">click here to navigate to data management</a>.
+        <FeedbackFocus.Components.ChartLoading />
+    </Callout>
+}
+
+@code {
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (StudentDashboardService.CourseData == null)
+        {
+            await StudentDashboardService.RefreshBaseStudentDashboardData();
+
+            _navigationManager.NavigateTo("refresh-filter/Student");
+        }
+
+    }
+}

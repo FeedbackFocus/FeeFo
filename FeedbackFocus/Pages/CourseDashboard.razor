@@ -1,0 +1,108 @@
+﻿@page "/course-dashboard"
+@using System.Diagnostics.CodeAnalysis;
+@using System.ComponentModel.DataAnnotations;
+@using BlazorBootstrap
+@using Blazorise
+@using FeedbackFocus.Services
+@using FeedbackFocus.Components.CourseCharts
+@inject CourseDashboardService CourseDashboardService
+@inject NavigationManager _navigationManager
+<h3>Course Dashboard</h3>
+
+
+@if (CourseDashboardService != null && CourseDashboardService.CompleteCourseData != null && CourseDashboardService.CompleteCourseData.Count > 0 && CourseDashboardService.ready == true)
+{
+
+    <FeedbackFocus.Components.Filters.CourseFilter />
+
+
+    <div class="row">
+        @if (CourseDashboardService.TotalNumberOfFeedbackItems != null && CourseDashboardService.CompleteCourseData.Count > 0)
+        {
+            <FeedbackFocus.Components.CardInfo Value="@CourseDashboardService.TotalNumberOfFeedbackItems.ToString()" CssClass="card bg-primary text-white" CssSymbol="oi oi-book" Measure="Total Number of Feedback Items" Link="/courseFeedbackInfo" />
+        }
+        else
+        {
+            <FeedbackFocus.Components.CardInfo Value="No Data..." CssClass="card bg-primary text-white" CssSymbol="oi oi-book" Measure="Total Number of Feedback Items" />
+        }
+        @if (CourseDashboardService.AverageWordsInFeedback != null && CourseDashboardService.CompleteCourseData.Count > 0)
+        {
+            <FeedbackFocus.Components.CardInfo Value="@CourseDashboardService.AverageWordsInFeedback.ToString()" CssClass="card bg-secondary text-white" CssSymbol="oi oi-book" Measure="Average Words in Feedback" Link="/courseWordsInfo" />
+
+        }
+        else
+        {
+            <FeedbackFocus.Components.CardInfo Value="No Data..." CssClass="card bg-secondary text-white" CssSymbol="oi oi-book" Measure="Average Words in Feedback" />
+
+        }
+
+        @if (CourseDashboardService.MinWordsInFeedback != null && CourseDashboardService.MaxWordsInFeedback != null && CourseDashboardService.CompleteCourseData.Count > 0)
+        {
+            <FeedbackFocus.Components.CardInfo Value="@(CourseDashboardService.MinWordsInFeedback.ToString() +" / "+ CourseDashboardService.MaxWordsInFeedback.ToString())" CssClass="card bg-info text-white" CssSymbol="oi oi-book" Measure="Min / Max Words in Feedback" Link="/courseAssessmentWordsInfo" />
+
+        }
+        else
+        {
+            <FeedbackFocus.Components.CardInfo Value="No Data..." CssClass="card bg-info text-white" CssSymbol="oi oi-book" Measure="Min / Max Words in Feedback" />
+
+        }
+        @if (CourseDashboardService.TotalNumberOfCourses != null && CourseDashboardService.CompleteCourseData.Count > 0)
+        {
+            <FeedbackFocus.Components.CardInfo Value="@CourseDashboardService.TotalNumberOfCourses.ToString()" CssClass="card bg-warning text-white" CssSymbol="oi oi-book" Measure="Total Courses in collection" Link="/courses" />
+        }
+        else
+        {
+            <FeedbackFocus.Components.CardInfo Value="No Data..." CssClass="card bg-warning text-white" CssSymbol="oi oi-book" Measure="Total Courses in collection" />
+        }
+    </div>
+    <div class="row">
+        @if (CourseDashboardService.CompleteCourseData.Count > 0)
+        {
+            <Course_Emotion_Overall />
+            <Course_Emotion />
+            <Course_Sentiment />
+
+            <Course_Grade_Distribution />
+            <Course_Average_Grades />
+            <Course_Average_Words />
+        }
+        else
+        {
+            <FeedbackFocus.Components.ChartLoading />
+        }
+
+
+
+        @*     <FeedbackFocus.Components.MultiDataLine_Course />
+    <FeedbackFocus.Components.MultiDataLineWordsPer_Course />
+    *@
+
+    </div>
+
+}
+else
+{
+    <Callout>
+        <strong>No Data Detected</strong>. To use the course dashboard you must enter some data, <a href="/courses">click here to navigate to data management</a>.
+        <FeedbackFocus.Components.ChartLoading />
+    </Callout>
+}
+@code {
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (CourseDashboardService.CompleteCourseData == null)
+        {
+            await CourseDashboardService.RefreshBaseCourseDashboardData();
+
+            _navigationManager.NavigateTo("refresh-filter/Course");
+        }
+
+    }
+
+
+
+}

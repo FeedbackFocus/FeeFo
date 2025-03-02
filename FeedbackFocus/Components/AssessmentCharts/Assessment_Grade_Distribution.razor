@@ -1,0 +1,65 @@
+﻿@using FeedbackFocus.Components.CourseCharts.HelperClasses
+@using FeedbackFocus.Services
+@inject AssessmentService _srvc;
+@inject AssessmentDashboardService _cdsrvc
+
+
+  @if (Data != null && (_cdsrvc.AssessmentGradeDistribution != null && _cdsrvc.AssessmentGradeDistribution.Count > 0))
+        {
+<ResizableChartComponent>
+<ApexChart TItem="GradeDistribution"
+           Title="Assessment Grade Distribution"
+Options="options"
+>
+
+        <ApexPointSeries TItem="GradeDistribution"
+                     Items="Data"
+                     Name="Grades"
+                     SeriesType="SeriesType.Bar"
+                     XValue="e => e.Bucket"
+                     YValue="e=> Math.Round(e.Value,2)" />
+
+      
+</ApexChart>
+</ResizableChartComponent>
+        }
+@code {
+    private ApexChartOptions<GradeDistribution> options;
+    private List<GradeDistribution> Data { get; set; } = new();
+    protected async override void OnInitialized()
+    {
+       
+
+        options = new ApexChartOptions<GradeDistribution>()
+        {
+                Chart = new()
+                {
+                    Toolbar = new()
+                    {
+                        Show = true,
+
+                        Tools = new()
+                        {
+                            Reset = true,
+                            Download = true,
+                            Selection = true,
+                            Zoom = true,
+                            Pan = true,
+                            Zoomin = true,
+                            Zoomout = true,
+
+                        },
+
+                    },
+
+                },
+        };
+        Data = _cdsrvc.AssessmentGradeDistribution;
+        // Data = await _cdsrvc.RefreshCourseGradeDistributionChartData();
+       StateHasChanged();
+    }
+
+    
+
+    
+}

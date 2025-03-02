@@ -1,0 +1,125 @@
+﻿@using FeedbackFocus.Components.CourseCharts.HelperClasses
+@using FeedbackFocus.Services
+@inject AssessmentService _srvc;
+@inject AssessmentDashboardService _cdsrvc
+
+@if (_cdsrvc.EmotionCourseData != null && _cdsrvc.EmotionCourseData.Count > 0)
+{
+    <ResizableChartComponent>
+        <ApexChart TItem="EmotionCourseData"
+                   Title="Assessment Emotion"
+                   Options="options">
+
+            <ApexPointSeries TItem="EmotionCourseData"
+                             Items="_cdsrvc.EmotionCourseData"
+                             Name="Joy"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Joy,2)" />
+
+            <ApexPointSeries TItem="EmotionCourseData"
+                             Items="_cdsrvc.EmotionCourseData"
+                             Name="Surprise"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Surprise,2)" />
+
+            <ApexPointSeries TItem="EmotionCourseData"
+                             Items="_cdsrvc.EmotionCourseData"
+                             Name="Neutral"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Neutral,2)" />
+
+            <ApexPointSeries TItem="EmotionCourseData"
+                             Items="_cdsrvc.EmotionCourseData"
+                             Name="Sadness"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Sadness,2)" />
+
+
+            <ApexPointSeries TItem="EmotionCourseData"
+                             Items="_cdsrvc.EmotionCourseData"
+                             Name="Anger"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Anger,2)" />
+
+            <ApexPointSeries TItem="EmotionCourseData"
+                             Items="_cdsrvc.EmotionCourseData"
+                             Name="Disgust"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Disgust,2)" />
+
+            <ApexPointSeries TItem="EmotionCourseData"
+                             Items="_cdsrvc.EmotionCourseData"
+                             Name="Fear"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Fear,2)" />
+        </ApexChart>
+    </ResizableChartComponent>
+}
+
+else
+{
+    <ChartLoading />
+
+}
+
+@code {
+    //MERID:Should the emotion be added up and divided by the number of feedback items analyzed?
+
+    private ApexChartOptions<EmotionCourseData> options = new ApexChartOptions<EmotionCourseData>();
+    //private List<EmotionCourseData> Data { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Yield();
+
+
+
+
+        options = new ApexChartOptions<EmotionCourseData>()
+            {
+                Legend = new()
+                {
+                    Show = true,
+                    Position = LegendPosition.Top,
+                },
+                Chart = new()
+                {
+                    
+                    Toolbar = new()
+                    {
+                        Show = true,
+                        Tools = new()
+                        {
+                            Reset = true,
+                            Download = true,
+                            Selection = true,
+                            Zoom = true,
+                            Pan = true,
+                        }
+                    },
+                },
+                Xaxis = new XAxis
+                {
+                    TickPlacement = TickPlacement.On,
+                    Type = XAxisType.Category,
+                    // Title = new AxisTitle { Text = "Assessment" },
+                    Labels = new XAxisLabels
+                    {
+                        RotateAlways = true,  // Force rotation
+                        Rotate = -45,         // Rotate the labels counterclockwise by 90 degrees
+                        MaxHeight = 100,      // Adjust the height to prevent overlapping
+                    }
+                }
+
+            };
+
+        StateHasChanged();
+    }
+
+}

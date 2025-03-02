@@ -1,0 +1,164 @@
+﻿@using Blazorise.Charts;
+@using Data;
+
+<div class="@CSSStyles.graphStyles">
+    <Blazorise.Charts.Chart @ref="barChart" Type="Blazorise.Charts.ChartType.Bar" TItem="double" Clicked="@OnClicked" Options="@chartOptions" />
+</div>
+
+@code {
+
+    static Random rnd = new Random();
+    [Parameter]
+    public List<string> Labels { get; set; } = new List<string> { "A01", "A02", "A03", "A04", "Midterm", "Final Exam" };
+
+    [Parameter]
+    public ChartColor[] colors { get; set; } = ChartHelper.EmotionColors;
+    Chart<double> barChart;
+    BarChartOptions chartOptions = new()
+        {
+             IndexAxis = "x",
+            AspectRatio = 1.5,
+            Responsive = true,
+             Scales = new()
+        {
+            Y = new()
+            {
+                Stacked = false,
+                SuggestedMin = -100,
+                SuggestedMax = 100,
+                BeginAtZero = true,
+                Max = 12,
+                Min = 0,
+            }
+        },
+            Plugins = new()
+            {
+                Title = new()
+                {
+                    Text = "Assessment Emotion",
+                    Position = "top",
+                    Display = true,
+                    Font = new()
+                    {
+                        Size = 24
+                    },
+                },
+                Legend = new()
+                {
+                    Display = true
+                }
+            }
+        };
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await HandleRedraw();
+        }
+    }
+
+    async Task HandleRedraw()
+    {
+        await barChart.Clear();
+        await barChart.AddLabels(this.Labels);
+        await barChart.AddDataSet(GetBarChartDataset("joy",RandomizeData_Joy()));
+        await barChart.AddDataSet(GetBarChartDataset("surprise",RandomizeData_Surprise()));
+        await barChart.AddDataSet(GetBarChartDataset("Neutral",RandomizeData_Neutral()));
+        await barChart.AddDataSet(GetBarChartDataset("sadness",RandomizeData_Sadness()));
+        await barChart.AddDataSet(GetBarChartDataset("anger",RandomizeData_Anger()));
+        await barChart.AddDataSet(GetBarChartDataset("disgust",RandomizeData_Disgust()));
+        await barChart.AddDataSet(GetBarChartDataset("fear",RandomizeData_Fear()));
+    }
+
+
+    #region chart generator
+    private BarChartDataset<double> GetBarChartDataset(string dataset, List<double> data)
+    {
+        ChartColor color;
+        //Set them to the correct emotion color
+        switch (dataset)
+        {
+            case "joy":
+                color = colors[0];
+                break;
+            case "surprise":
+                color = colors[1];
+                break;
+            case "Neutral":
+                color = colors[2];
+                break;
+            case "sadness":
+                color = colors[3];
+                break;
+            case "anger":
+                color = colors[4];
+                break;
+            case "disgust":
+                color = colors[5];
+                break;
+            case "fear":
+                color = colors[6];
+                break;
+            default:
+                color = colors[0];
+                break;
+
+           
+        }
+        return new()
+            {
+                Label = dataset,
+                Data = data,
+                BackgroundColor = new List<string>() { color },
+                BorderColor = new List<string>() { color },
+                BorderWidth = 1,
+
+            };
+    }
+
+
+    #endregion
+
+
+    Task OnClicked(ChartMouseEventArgs e)
+    {
+        var model = e.Model as BarChartModel;
+        Console.WriteLine($"Handling event for {nameof(BarChartModel)}: x:{model.X} y:{model.Y}");
+        return Task.CompletedTask;
+    }
+
+    public List<double> RandomizeData_Joy()
+    {
+        return new List<double> {1.99453164, 1.85178472, 8.59232553, 6.55926922, 1.50908889};
+    }
+
+    public List<double> RandomizeData_Surprise()
+    {
+        return new List<double> {1.2954837, 0.86020837, 3.09677516, 2.59520901, 0.44332376};
+    }
+
+    public List<double> RandomizeData_Neutral()
+    {
+        return new List<double> {0.09804081, 3.07814866, 3.94864546, 1.80256744, 0.96959762};
+    }
+
+    public List<double> RandomizeData_Sadness()
+    {
+        return new List<double> {2.34358631, 1.41342394, 2.04679666, 1.52989406, 1.61529903};
+    }
+
+    public List<double> RandomizeData_Anger()
+    {
+        return new List<double> {0.9588735, 2.26374959, 1.87469226, 1.82121478, 0.19446987};
+    }
+
+    public List<double> RandomizeData_Disgust()
+    {
+        return new List<double> {0.35277734, 0.87819292, 0.77334393, 2.25551406, 0.26717175};
+    }
+
+    public List<double> RandomizeData_Fear()
+    {
+        return new List<double> {0.45580835, 0.65678659, 0.0632994, 0.19789071, 0.07321495};
+    }
+}

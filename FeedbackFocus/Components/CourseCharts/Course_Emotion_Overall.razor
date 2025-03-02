@@ -1,0 +1,74 @@
+﻿@using FeedbackFocus.Components.CourseCharts.HelperClasses
+@using FeedbackFocus.Services
+@inject CourseService _srvc;
+@inject CourseDashboardService _cdsrvc
+
+@if (_cdsrvc.OverallEmotionData != null && _cdsrvc.OverallEmotionData.Count > 0 )
+{
+
+    <ResizableChartComponent>
+        <ApexChart TItem="EmotionOverallCourseData"
+                   Title="Overall Course Emotion"
+                   Options="options">
+
+            <ApexPointSeries TItem="EmotionOverallCourseData"
+                             Items="@_cdsrvc.OverallEmotionData"
+                             Name="Joy"
+                             SeriesType="SeriesType.Pie"
+                             XValue="e => e.Emotion"
+                             YValue="e=> Math.Round(e.Value,2)" />
+
+
+        </ApexChart>
+    </ResizableChartComponent>
+}
+else
+{
+    <ChartLoading />
+
+}
+
+@code {
+    private List<EmotionOverallCourseData>? Data { get; set; } = null;
+    private ApexChartOptions<EmotionOverallCourseData> options;
+    protected async override Task OnInitializedAsync()
+    {
+     //Make sure the chart loads full size
+        await Task.Delay(1500);
+
+        //Data = _cdsrvc.OverallEmotionData;
+        //Data =  _cdsrvc.RefreshOverallPieChartData();
+        options = new ApexChartOptions<EmotionOverallCourseData>()
+            {
+                Chart = new()
+                {
+                    Height = "100%",
+                    Toolbar = new()
+                    {
+                        Show = true,
+
+                        Tools = new()
+                        {
+                            Reset = true,
+                            Download = true,
+                            Selection = true,
+                            Zoom = true,
+                            Pan = true,
+                            Zoomin = true,
+                            Zoomout = true,
+
+                        },
+
+                    },
+
+                },
+                Legend = new()
+                {
+                    Show = true,
+                    Position = ApexCharts.LegendPosition.Bottom
+                },
+
+            };
+        StateHasChanged();
+    }
+}

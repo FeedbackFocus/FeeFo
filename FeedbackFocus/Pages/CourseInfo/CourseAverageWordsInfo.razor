@@ -1,0 +1,75 @@
+﻿@page "/courseWordsInfo"
+@using System.Collections;
+@using CsvHelper;
+@using System.Globalization;
+@using CsvHelper.Configuration;
+@using FeedbackFocus.Components.FileParsing
+@using FeedbackFocus.Models;
+@using Microsoft.VisualBasic.FileIO;
+
+
+@inject FeedbackFocus.Services.CourseDashboardService _courseDashboardService;
+
+
+<div class="d-flex align-items-center">
+    <button class="btn" onclick="window.history.back();">
+        <span class="oi oi-arrow-thick-left" aria-hidden="true"></span>
+    </button>
+    <h3 class="mb-0 ml-2">Course Feedback</h3>
+</div>
+
+<table class="table table-striped table-bordered table-hover table-sm">
+    <thead class="thead-dark">
+    <th>Average</th>
+    <th>Minimum</th>
+    <th>Maximum</th>
+    <th>Standard Deviation</th>
+    </thead>
+
+
+    <tr class="border">
+        <td>@_courseDashboardService.AverageWordsInFeedback</td>
+        <td>@_courseDashboardService.MinWordsInFeedback</td>
+        <td>@_courseDashboardService.MaxWordsInFeedback</td>
+        <td>@_courseDashboardService.StandardDeviationWordsInFeedback</td>
+
+    </tr>
+
+</table>
+
+
+
+
+
+
+
+
+
+
+@code {
+    public bool ShowBackdrop = false;
+    bool analysis = false;
+    [Parameter]
+    public string AssessmentId { get; set; }
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    List<FeedbackItem> lstItems = new();
+    List<AnalysisItem> lstAnalysis = new();
+    private FeedbackItem? currentFeedbackItem = null;
+    private FeedbackFocus.Components.AddFeedbackItemModal Modal { get; set; }
+    private FeedbackFocus.Components.EditFeedbackItemModal EditModal { get; set; }
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        base.OnInitializedAsync();
+
+
+        StateHasChanged();
+
+
+    }
+}

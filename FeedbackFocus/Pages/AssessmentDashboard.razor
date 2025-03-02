@@ -1,0 +1,78 @@
+﻿@page "/assessment-dashboard"
+@using BlazorBootstrap
+@using FeedbackFocus.Services
+@using FeedbackFocus.Components.CourseCharts
+@inject AssessmentDashboardService AssessmentDashboardService
+@inject NavigationManager _navigationManager
+@using System.Diagnostics.CodeAnalysis;
+@using System.ComponentModel.DataAnnotations;
+@using Blazorise
+
+<h3>Assessment Dashboard</h3>
+
+
+    @if (AssessmentDashboardService.CourseData != null && AssessmentDashboardService.CourseData.Count > 0 && AssessmentDashboardService.ready)
+    {
+<div class="row">
+    <p>@AssessmentDashboardService.SelectedAssessments</p>
+</div>
+<div class="row">
+<FeedbackFocus.Components.Filters.AssessmentFilter />
+
+        <FeedbackFocus.Components.CardInfo Value="@AssessmentDashboardService?.TotalWordsInFeedback.ToString()"
+                                                           CssClass="card bg-primary text-white"
+                                                           CssSymbol="oi oi-book"
+                                                           Measure="@($"Total Words in {AssessmentDashboardService?.TotalNumberOfFeedbackItems} Assessment Feedback Items")"
+                                                           Link="/assessmentWordsInfo" />
+
+        <FeedbackFocus.Components.CardInfo Value="@((AssessmentDashboardService?.AverageWordsInFeedback.HasValue ?? false) ? Math.Round((decimal)AssessmentDashboardService.AverageWordsInFeedback.Value, 0).ToString() : "N/A")"
+                                                           CssClass="card bg-secondary text-white"
+                                                           CssSymbol="oi oi-book"
+                                                           Measure="Average Words in Assessment Feedback"
+                                                           Link="/AssessmentStatsInfo" />
+
+
+        <FeedbackFocus.Components.CardInfo Value="@AssessmentDashboardService?.MostPrevalentEmotion"
+                                                           CssClass="card bg-info text-white"
+                                                           CssSymbol="oi oi-book"
+                                                           Measure="Most Prevalent Emotion in Feedback"
+                                                           Link="/AssessmentEmotionInfo" />
+
+
+        <FeedbackFocus.Components.CardInfo Value="@AssessmentDashboardService.AverageWordsText"
+                                                           CssClass="card bg-warning text-white"
+                                                           CssSymbol="oi oi-book" Measure="Length of feedback compared to other assessments in the entire set"
+                                                           Link="/AssessmentEmotionComparisonInfo" />
+
+
+        <FeedbackFocus.Components.AssessmentCharts.Assessment_Emotion_Overall />
+        <FeedbackFocus.Components.AssessmentCharts.Assessment_Emotion />
+        <FeedbackFocus.Components.AssessmentCharts.Assessment_Sentiment />
+        <FeedbackFocus.Components.AssessmentCharts.Assessment_Grade_Distribution />
+        <FeedbackFocus.Components.AssessmentCharts.Assessment_Average_Grades />
+        <FeedbackFocus.Components.AssessmentCharts.Assessment_Average_Words />
+
+</div>
+    }
+    else
+    {
+            <Callout>
+        <strong>No Data Detected</strong>. To use the assessment dashboard you must enter some data, <a href="/courses">click here to navigate to data management</a>.
+        <FeedbackFocus.Components.ChartLoading />
+    </Callout>
+    }
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (AssessmentDashboardService.CourseData == null)
+        {
+            await AssessmentDashboardService.RefreshBaseAssessmentDashboardData();
+
+            _navigationManager.NavigateTo("refresh-filter/Assessment");
+        }
+
+    }
+
+
+}

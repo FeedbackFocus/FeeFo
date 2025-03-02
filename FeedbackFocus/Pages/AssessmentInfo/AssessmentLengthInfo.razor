@@ -1,0 +1,135 @@
+﻿@page "/AssessmentEmotionComparisonInfo"
+@using System.Collections;
+@using CsvHelper;
+@using System.Globalization;
+@using CsvHelper.Configuration;
+@using FeedbackFocus.Components.FileParsing
+@using FeedbackFocus.Models;
+@using Microsoft.VisualBasic.FileIO;
+
+
+@inject FeedbackFocus.Services.AssessmentDashboardService _assessmentDashboardService;
+
+
+<div class="d-flex align-items-center">
+    <button class="btn" onclick="window.history.back();">
+        <span class="oi oi-arrow-thick-left" aria-hidden="true"></span>
+    </button>
+    <h3 class="mb-0 ml-2">Assessment Feedback</h3>
+</div>
+
+<p>The total number of words in the entire dataset divided by the number of assessments:@_assessmentDashboardService.AverageWordsInFeedbackByAssessment.ToString("N0")</p>
+
+
+@foreach (var course in _assessmentDashboardService.CourseData)
+{
+    @foreach (var assessment in course.Assessments)
+    {
+
+
+
+        <h4>Assessment: @assessment.Name</h4>
+
+        <table class="table table-striped table-bordered table-hover table-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Length</th>
+                    <th>Classification</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    tmpCounter = assessment.Feedback
+                    .Where(item => !string.IsNullOrWhiteSpace(item.FeedbackToLearner))
+                    .SelectMany(item =>
+                    item.FeedbackToLearner
+                    .Trim() // Remove leading/trailing whitespace
+                    .Replace("  ", " ") // Handle double spaces
+                    .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries) // Split and remove empty entries
+                    )
+                    .Count();
+
+
+
+
+
+                }
+
+
+                @if ((tmpCounter > _assessmentDashboardService.AverageWordsInFeedbackByAssessment))
+                {
+                <td>
+                        @tmpCounter
+                </td>
+                    <td>Above Average</td>
+                }
+                else if ((tmpCounter < _assessmentDashboardService.AverageWordsInFeedbackByAssessment))
+                {
+                <td>
+                    @tmpCounter
+                </td>
+                    <td>Below Average</td>
+                } else
+                {
+                <td>
+                    @tmpCounter
+                </td>
+                    <td>Average</td>
+                }
+                @* @foreach (var feedback in assessment.Feedback)
+                {
+                    <tr>
+                        <td>@feedback.Username</td>
+                        <td>@feedback.Grade</td>
+                        <td>@((MarkupString)feedback.FeedbackToLearner)</td>
+                        @if(feedback.Analysis != null && feedback.Analysis.Count > 0)
+                        {
+                             <td>@feedback.Analysis.Where(x =>x.AnalysisType=="emotion").OrderByDescending(x=>x.Value).FirstOrDefault().Label</td>
+                        } else
+                        {
+                            <td>No Analysis</td>
+                        }
+                       
+                    </tr>
+                } *@
+            </tbody>
+        </table>
+    }
+}
+
+
+
+
+
+
+
+
+
+
+@code {
+    public bool ShowBackdrop = false;
+    bool analysis = false;
+    [Parameter]
+    public string AssessmentId { get; set; }
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    List<FeedbackItem> lstItems = new();
+    List<AnalysisItem> lstAnalysis = new();
+    private FeedbackItem? currentFeedbackItem = null;
+    private FeedbackFocus.Components.AddFeedbackItemModal Modal { get; set; }
+    private FeedbackFocus.Components.EditFeedbackItemModal EditModal { get; set; }
+    private int tmpCounter = 0;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        base.OnInitializedAsync();
+
+
+        StateHasChanged();
+
+
+    }
+}

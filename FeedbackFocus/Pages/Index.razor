@@ -1,0 +1,128 @@
+﻿@page "/"
+@using System.Collections;
+@using CsvHelper;
+@using System.Globalization;
+@using CsvHelper.Configuration;
+@using FeedbackFocus.Data;
+@using FeedbackFocus.Models;
+@using FeedbackFocus.Services
+@inject StudentObfuscator _obfuscate
+@using Microsoft.VisualBasic.FileIO;
+@using BlazorBootstrap
+@inject CourseDashboardService _cdsrvc
+
+<PageTitle>Feedback Focus</PageTitle>
+<h1>Feedback Focus</h1>
+@* <FeedbackFocus.Components.FileParsing.CSVImporter /> *@
+<p>This application provides a powerful and free tool for instructors that leverage a Learning Management System (LMS) for delivering course content and providing feedback. 
+Currently the tool supports manual data entry as well as data import from popular LMS such as Blackboard and Moodle.
+</p>
+@* <button @onclick="go">Obfuscate</button>   *@
+<h2>Training</h2>
+<BlazorBootstrap.Accordion>
+    <AccordionItem Title="Overview">
+        <Content>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/5NcRhRaEzC8?si=NzkUUpfV7ZUhvjo2" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Manual Data Entry">
+        <Content>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/_aIVDKJI_jM?si=l6YoPGsIq-9Lrm1F" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Data Export - Blackboard">
+        <Content>
+            <p>In order to export data from the Blackboard LMS visit the official Blackboard website for instructions found here:<a href="https://help.blackboard.com/Learn/Instructor/Original/Grade/Grading_Tasks/Work_Offline_With_Grade_Data">Blackboard Grade Center Export</a></p>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/jKA0v45kQvw?si=z-r_Ri_ooxOnicor" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Data Export - Moodle">
+        <Content>
+            <p>In order to export data from the Moodle LMS visit the official Moodle website for instructions found here:<a href="https://docs.moodle.org/404/en/Using_Assignment#You_want_to_read_and_grade_student_assignments_offline">Moodle Grade Center Export</a></p>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/mO-l0TMqkp8?si=6_tasYs5XJNsu5TM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Data Import - Blackboard">
+        <Content>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/kWP8W0cow0M?si=n7HGCjVYHBA17VnP" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Data Import - Moodle">
+        <Content>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/nVFjwY2cqBA?si=-XHazbK2sutQM43n" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Saving/Loading Data">
+        <Content>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/Ifq3OJx_604?si=D3R0IMS2ETYrQjx-" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Data Analysis">
+        <Content>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/tmP7dmXBTik?si=QQAOjcoWgFHR6-Pd" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Course Dashboard">
+        <Content>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/b3Qat0_ABsI?si=pv1TNZbxQmMp9bC3" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Assessment Dashboard">
+        <Content>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/Zh1pnkdCXyI?si=BxUCcS-mQO9K0j-O" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </Content>
+    </AccordionItem>
+    <AccordionItem Title="Student Dashboard">
+        <Content>
+            <div class="iframe-container">
+            <iframe width="375" height="250" src="https://www.youtube.com/embed/Kn4ik6gyzds?si=8_5VDFnY6_SZa3Ht" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        </div>
+        </Content>
+    </AccordionItem>
+</BlazorBootstrap.Accordion>
+
+<style>
+    .iframe-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        height: 0;
+        overflow: hidden;
+    }
+
+        .iframe-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+</style>
+@code
+{
+    private async Task go()
+    {
+        await _obfuscate.Obfuscate();
+    }
+}

@@ -1,0 +1,124 @@
+﻿<style>
+    .top-right-button {
+        position: absolute;
+        top: 10px;
+        right: 5px;
+        z-index: 1000;
+    }
+
+    .full-screen-div {
+        position: fixed; /* Changed from absolute to fixed to ensure it fills the entire viewport */
+        top: 50px;
+        right: 50px;
+        bottom: 50px;
+        left: 50px;
+        background-color: white; /* Optional: Set a background color */
+        z-index: 1000; /* Ensure it appears above other content */
+        overflow: hidden; /* Hide overflow content */
+        box-sizing: border-box; /* Include padding and border in element's total width and height */
+    }
+
+    .position-relative {
+        position: relative;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .child-content {
+        height: 600px; /* Adjust based on header/footer if any */
+        overflow-y: auto;
+    }
+</style>
+@if (fullScreen)
+{
+    <style>
+        .modal-fullscreen-custom {
+            margin: 25px;
+            width: auto;
+            max-width: calc(100% - 50px);
+            height: 90vh; /* Set the modal height to 90% of the viewport height */
+        }
+
+        .modal-content-custom {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .modal-body {
+            flex: 1 1 auto;
+            overflow: auto; /* Allow scrolling if content exceeds the modal body */
+        }
+
+        .modal-footer {
+            flex-shrink: 0;
+        }
+    </style>
+
+    <div class="modal show" role="dialog" style="display:block;">
+        <div class="modal-dialog modal-fullscreen-custom" role="document">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Course</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="MakeChartBig">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @ChildContent
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="MakeChartBig">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+}
+else
+{
+    <div class="@graphStyles shadow-sm">
+        <div class="position-relative">
+            <button class="btn btn-primary btn-sm" @onclick="MakeChartBig">
+                <span class="oi oi-fullscreen-enter" aria-hidden="true"></span>
+            </button>
+
+            @ChildContent
+
+        </div>
+    </div>
+}
+
+
+
+@code {
+    public string ModalDisplay = "block";
+    public string ModalClass = "Show";
+
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    private bool fullScreen = false;
+    private string graphStyles = CSSStyles.graphStyles;
+    string styles = "";
+
+    private void MakeChartBig(MouseEventArgs e)
+    {
+
+        fullScreen = !fullScreen;
+        if (!fullScreen)
+        {
+            graphStyles = CSSStyles.graphStyles;
+        }
+        else
+        {
+            graphStyles = "col-12 col-sm-12 col-md-12 col-lg-12";
+        }
+        StateHasChanged();
+    }
+
+
+
+}

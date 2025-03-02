@@ -1,0 +1,95 @@
+﻿@using FeedbackFocus.Components.FileParsing
+@using FeedbackFocus.Models;
+@inject FeedbackFocus.Services.AssessmentService _assignmentService;
+
+<div class="modal @ModalClass" tabindex="-1" role="dialog" style="display:@ModalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Assessment</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => Close()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="Name">Name</label>
+                        <input type="text" class="form-control" id="Name" placeholder="Enter Name" @bind-value="@assignment.Name">
+                        <label for="MaxScore">Max Score</label>
+                        <input type="number" class="form-control" id="MaxScore" placeholder="Enter Max Score" @bind-value="@assignment.MaxScore">
+                        <label for="DueDate">Due Date</label>
+                        <input type="date" class="form-control" id="DueDate" placeholder="Enter Max Score" @bind-value="@assignment.DueDate">
+                        <input type="hidden" class="form-control" @bind-value="@assignment.Id">
+                        
+                    </div>
+                </form> 
+
+                @* <p>Modal body text goes here.</p>*@
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @onclick="() => AddAssignment()">Add</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="() => Close()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+@code {
+   
+    private Assessment assignment = new();
+    public Guid Guid = Guid.NewGuid();
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    public bool ShowBackdrop = false;
+
+
+
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+    
+    private Guid courseId = default;
+
+    public void Open()
+    {
+        ModalDisplay = "block;";
+        ModalClass = "Show";
+        ShowBackdrop = true;
+        
+        StateHasChanged();
+    }
+    
+    public async Task SetCourse(Course c){
+      courseId = c.Id;
+    }
+
+    public void Close()
+    {
+        ModalDisplay = "none";
+        ModalClass = "";
+        ShowBackdrop = false;
+        OnClose.InvokeAsync(null);
+        StateHasChanged();
+    }
+
+    private async void AddAssignment()
+    {
+        assignment.CourseId = courseId;
+        if(assignment.MaxScore ==0)
+    {
+            assignment.MaxScore = 100;
+        }
+        await _assignmentService.AddAssignment(assignment);
+        Close();
+        assignment = new();
+        StateHasChanged();
+    }
+}

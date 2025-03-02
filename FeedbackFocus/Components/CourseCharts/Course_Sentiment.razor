@@ -1,0 +1,89 @@
+﻿@using FeedbackFocus.Components.CourseCharts.HelperClasses
+@using FeedbackFocus.Services
+@inject CourseService _srvc
+@inject CourseDashboardService _cdsrvc
+
+@if (Data != null && (_cdsrvc.SentimentCourseData != null && _cdsrvc.SentimentCourseData.Count > 0))
+{
+    <ResizableChartComponent>
+
+        <ApexChart TItem="SentimentCourseData"
+                   Title="Course Sentiment"
+                   Options="options">
+            <ApexPointSeries TItem="SentimentCourseData"
+                             Items="Data"
+                             Name="Positive"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Positive,4)" />
+
+            <ApexPointSeries TItem="SentimentCourseData"
+                             Items="Data"
+                             Name="Neutral"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Neutral,4)" />
+
+            <ApexPointSeries TItem="SentimentCourseData"
+                             Items="Data"
+                             Name="Negative"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Negative,4)" />
+        </ApexChart>
+
+    </ResizableChartComponent>
+}
+@code {
+    private ApexChartOptions<SentimentCourseData> options;
+    private List<SentimentCourseData> Data { get; set; }
+
+    protected override void OnInitialized()
+    {
+        options = new ApexChartOptions<SentimentCourseData>()
+            {
+                Chart = new()
+                {
+                    Toolbar = new()
+                    {
+                        Show = true,
+
+                        Tools = new()
+                        {
+                            Reset = true,
+                            Download = true,
+                            Selection = true,
+                            Zoom = true,
+                            Pan = true,
+                            Zoomin = true,
+                            Zoomout = true,
+
+                        },
+
+                    },
+
+                },
+                PlotOptions = new PlotOptions
+                {
+                    Bar = new PlotOptionsBar
+                    {
+                        Horizontal = true,
+                        //RangeBarGroupRows = true,
+                    }
+                },
+                Xaxis = new XAxis
+                {
+                    Min = 0,
+                    Max = 1,
+                }
+
+
+            };
+        if (_cdsrvc.SentimentCourseData != null)
+            Data = _cdsrvc.SentimentCourseData;
+        StateHasChanged();
+
+    }
+
+
+}

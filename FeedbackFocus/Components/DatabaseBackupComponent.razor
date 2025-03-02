@@ -1,0 +1,58 @@
+﻿@inject FeedbackFocus.Services.CourseService _courseService;
+@using System.Text.Json
+@using FeedbackFocus.Models;
+@using Microsoft.JSInterop
+@using System.Text;
+@inject IJSRuntime JSRuntime
+
+
+
+
+
+
+<div class="nav-item px-3 btn btn-secondary d-flex justify-content-center align-items-center text-white m-4" style="height: 50px;">
+    <NavLink class="m-4 text-decoration-none" @onclick="downloadObject">
+        <span class="oi oi-list-rich text-white" aria-hidden="true"></span> <span class="text-white">Save Data</span>
+    </NavLink>
+</div>
+
+<div class="nav-item px-3 btn btn-secondary d-flex justify-content-center align-items-center text-white m-4" style="height: 50px;">
+    <NavLink class="m-4 text-decoration-none">
+        <label for="fileinput">
+            <span class="oi oi-paperclip text-white"></span> <span class="text-white">Load Data</span>
+            <InputFile id="fileinput" class="custom-input-hide" OnChange="@LoadFiles" multiple hidden />
+        </label>
+    </NavLink>
+</div>
+
+
+@code {
+    async Task downloadObject()
+    {
+        var obj = JsonSerializer.Serialize(await _courseService.BackupDatabaseToJSON());
+        var fileStream = new MemoryStream(new UTF8Encoding(true).GetBytes(obj));
+        using var streamRef = new DotNetStreamReference(stream: fileStream);
+        await JSRuntime.InvokeVoidAsync("downloadFileFromStream", DateTime.Now.ToString("HH_mm_MM_dd_feefo_")+"db.backup", streamRef);
+    }
+
+
+
+    private async void LoadFiles(InputFileChangeEventArgs e)
+    {
+
+        var file = e.File;
+        long maxsize = long.MaxValue;
+
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream(maxsize).ReadAsync(buffer);
+        var fileContent = System.Text.Encoding.UTF8.GetString(buffer);
+
+        List<Course> obj = JsonSerializer.Deserialize<List<Course>>(fileContent);
+        foreach (Course c in obj)
+        {
+            if (await _courseService.GetCourseById(c.Id) == null)
+                await _courseService.AddCourse(c);
+        }
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,93 @@
+﻿@page "/studentFeedbackInfo"
+@using System.Collections;
+@using CsvHelper;
+@using System.Globalization;
+@using CsvHelper.Configuration;
+@using FeedbackFocus.Components.FileParsing
+@using FeedbackFocus.Models;
+@using Microsoft.VisualBasic.FileIO;
+@using BlazorBootstrap
+
+
+@inject FeedbackFocus.Services.StudentDashboardService _studentDashboardService;
+
+
+<div class="d-flex align-items-center">
+    <button class="btn" onclick="window.history.back();">
+        <span class="oi oi-arrow-thick-left" aria-hidden="true"></span>
+    </button>
+    <h3 class="mb-0 ml-2">Student Feedback Info</h3>
+</div>
+
+<BlazorBootstrap.Grid TItem="FlattenedFeedbackItem"
+                      Class="table table-hover table-bordered table-striped"
+                      Data="@FlattenedFeedback"
+                      AllowFiltering="false"
+                      AllowPaging="false"
+                      AllowSorting="true"
+                      AllowSelection="false"
+                      Responsive="true">
+    <GridColumns>
+        <GridColumn TItem="FlattenedFeedbackItem" HeaderText="User Full Name" PropertyName="UserFullName" SortKeySelector="item => item.UserFullName">
+            @context.UserFullName
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackItem" HeaderText="Grade" PropertyName="Grade" SortKeySelector="item => item.Grade">
+            @context.Grade
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackItem" HeaderText="Feedback" PropertyName="FeedbackToLearner" SortKeySelector="item => item.FeedbackToLearner">
+            @context.FeedbackToLearner
+        </GridColumn>
+    </GridColumns>
+</BlazorBootstrap.Grid>
+
+
+
+
+
+
+
+
+
+
+@code {
+    public bool ShowBackdrop = false;
+    bool analysis = false;
+    [Parameter]
+    public string AssessmentId { get; set; }
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    List<FeedbackItem> lstItems = new();
+    List<AnalysisItem> lstAnalysis = new();
+    private FeedbackItem? currentFeedbackItem = null;
+    private FeedbackFocus.Components.AddFeedbackItemModal Modal { get; set; }
+    private FeedbackFocus.Components.EditFeedbackItemModal EditModal { get; set; }
+
+
+
+
+    private List<FlattenedFeedbackItem> FlattenedFeedback = new();
+    protected override async Task OnInitializedAsync()
+    {
+        FlattenedFeedback = _studentDashboardService.CourseData
+            .SelectMany(course => course.Assessments)
+            .SelectMany(assessment => assessment.Feedback.Select(feedback => new FlattenedFeedbackItem
+                {
+                    UserFullName = feedback.FirstName + " " + feedback.LastName,
+                    Grade = feedback.Grade,
+                    FeedbackToLearner = feedback.FeedbackToLearner
+                }))
+            .ToList();
+
+        base.OnInitializedAsync();
+        StateHasChanged();
+    }
+
+
+
+    public class FlattenedFeedbackItem
+    {
+        public string UserFullName { get; set; }
+        public decimal Grade { get; set; }
+        public string FeedbackToLearner { get; set; }
+    }
+}

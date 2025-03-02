@@ -1,0 +1,121 @@
+﻿@page "/studentFeedbackDetailInfo"
+@using System.Collections;
+@using CsvHelper;
+@using System.Globalization;
+@using CsvHelper.Configuration;
+@using FeedbackFocus.Components.FileParsing;
+@using FeedbackFocus.Models;
+@using Microsoft.VisualBasic.FileIO;
+@using BlazorBootstrap
+
+@inject FeedbackFocus.Services.StudentDashboardService _studentDashboardService;
+
+<div class="d-flex align-items-center">
+    <button class="btn" onclick="window.history.back();">
+        <span class="oi oi-arrow-thick-left" aria-hidden="true"></span>
+    </button>
+    <h3 class="mb-0 ml-2">Student Feedback Data</h3>
+</div>
+
+<BlazorBootstrap.Grid TItem="FlattenedFeedbackDetail"
+                      Class="table table-hover table-bordered table-striped"
+                      Data="@FlattenedFeedbackDetails"
+                      AllowFiltering="false"
+                      AllowPaging="false"
+                      AllowSorting="true"
+                      AllowSelection="false"
+                      Responsive="true">
+    <GridColumns>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="User Full Name" PropertyName="UserFullName" SortKeySelector="item => item.UserFullName">
+            @context.UserFullName
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Grade" PropertyName="Grade" SortKeySelector="item => item.Grade">
+            @context.Grade
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Sentiment+" PropertyName="SentimentPositive" SortKeySelector="item => item.SentimentPositive">
+            @context.SentimentPositive
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Sentiment" PropertyName="SentimentNeutral" SortKeySelector="item => item.SentimentNeutral">
+            @context.SentimentNeutral
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Sentiment-" PropertyName="SentimentNegative" SortKeySelector="item => item.SentimentNegative">
+            @context.SentimentNegative
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Joy" PropertyName="Joy" SortKeySelector="item => item.Joy">
+            @context.Joy
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Surprise" PropertyName="Surprise" SortKeySelector="item => item.Surprise">
+            @context.Surprise
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Neutral" PropertyName="Neutral" SortKeySelector="item => item.Neutral">
+            @context.Neutral
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Sadness" PropertyName="Sadness" SortKeySelector="item => item.Sadness">
+            @context.Sadness
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Anger" PropertyName="Anger" SortKeySelector="item => item.Anger">
+            @context.Anger
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Disgust" PropertyName="Disgust" SortKeySelector="item => item.Disgust">
+            @context.Disgust
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Fear" PropertyName="Fear" SortKeySelector="item => item.Fear">
+            @context.Fear
+        </GridColumn>
+        <GridColumn TItem="FlattenedFeedbackDetail" HeaderText="Feedback" PropertyName="FeedbackToLearner" SortKeySelector="item => item.FeedbackToLearner">
+            @context.FeedbackToLearner
+        </GridColumn>
+    </GridColumns>
+</BlazorBootstrap.Grid>
+
+@code {
+    private List<FlattenedFeedbackDetail> FlattenedFeedbackDetails = new();
+    protected override async Task OnInitializedAsync()
+    {
+        await _studentDashboardService.RefreshBaseStudentDashboardData();
+
+        FlattenedFeedbackDetails = _studentDashboardService.CourseData?
+            .SelectMany(course => course.Assessments)
+            .SelectMany(assessment => assessment.Feedback.Select(feedback => new FlattenedFeedbackDetail
+                {
+                    UserFullName = $"{feedback.FirstName} {feedback.LastName}",
+                    Grade = feedback.Grade,
+                    SentimentPositive = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "sentiment" && x.Label == "positive")?.Value ?? 0, 2),
+                    SentimentNeutral = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "sentiment" && x.Label == "neutral")?.Value ?? 0, 2),
+                    SentimentNegative = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "sentiment" && x.Label == "negative")?.Value ?? 0, 2),
+                    Joy = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "emotion" && x.Label == "joy")?.Value ?? 0, 2),
+                    Surprise = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "emotion" && x.Label == "surprise")?.Value ?? 0, 2),
+                    Neutral = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "emotion" && x.Label == "neutral")?.Value ?? 0, 2),
+                    Sadness = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "emotion" && x.Label == "sadness")?.Value ?? 0, 2),
+                    Anger = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "emotion" && x.Label == "anger")?.Value ?? 0, 2),
+                    Disgust = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "emotion" && x.Label == "disgust")?.Value ?? 0, 2),
+                    Fear = Math.Round(feedback.Analysis?.FirstOrDefault(x => x.AnalysisType == "emotion" && x.Label == "fear")?.Value ?? 0, 2),
+                    FeedbackToLearner = feedback.FeedbackToLearner ?? "No feedback provided"
+                }))
+            .ToList();
+
+        StateHasChanged();
+
+    }
+
+
+
+
+
+    public class FlattenedFeedbackDetail
+    {
+        public string UserFullName { get; set; }
+        public decimal Grade { get; set; }
+        public decimal SentimentPositive { get; set; }
+        public decimal SentimentNeutral { get; set; }
+        public decimal SentimentNegative { get; set; }
+        public decimal Joy { get; set; }
+        public decimal Surprise { get; set; }
+        public decimal Neutral { get; set; }
+        public decimal Sadness { get; set; }
+        public decimal Anger { get; set; }
+        public decimal Disgust { get; set; }
+        public decimal Fear { get; set; }
+        public string FeedbackToLearner { get; set; }
+    }
+}

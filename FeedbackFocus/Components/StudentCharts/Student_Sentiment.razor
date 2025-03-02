@@ -1,0 +1,96 @@
+﻿@using FeedbackFocus.Components.CourseCharts.HelperClasses
+@using FeedbackFocus.Services
+
+@inject StudentDashboardService _sdsrvc
+
+@if (Data != null && (_sdsrvc.SentimentStudentData != null && _sdsrvc.SentimentStudentData.Count > 0))
+{
+    <ResizableChartComponent>
+
+        <ApexChart TItem="SentimentCourseData"
+                   Title="Student Sentiment"
+                   Options="options">
+            <ApexPointSeries TItem="SentimentCourseData"
+                             Items="Data"
+                             Name="Positive"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Positive,4)" />
+
+            <ApexPointSeries TItem="SentimentCourseData"
+                             Items="Data"
+                             Name="Neutral"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Neutral,4)" />
+
+            <ApexPointSeries TItem="SentimentCourseData"
+                             Items="Data"
+                             Name="Negative"
+                             SeriesType="SeriesType.Bar"
+                             XValue="e => e.Course"
+                             YValue="e=> Math.Round(e.Negative,4)" />
+        </ApexChart>
+
+    </ResizableChartComponent>
+}
+@code {
+    private ApexChartOptions<SentimentCourseData> options;
+    private List<SentimentCourseData> Data { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        options = new ApexChartOptions<SentimentCourseData>()
+            {
+                Chart = new()
+                {
+  
+                    Toolbar = new()
+                    {
+                        Show = true,
+
+                        Tools = new()
+                        {
+                            Reset = true,
+                            Download = true,
+                            Selection = true,
+                            Zoom = true,
+                            Pan = true,
+                            Zoomin = true,
+                            Zoomout = true,
+
+                        },
+
+                    },
+
+                },
+                
+                PlotOptions = new PlotOptions
+                {
+                    Bar = new PlotOptionsBar
+                    {
+                        Horizontal = false,
+                        //RangeBarGroupRows = true,
+                    }
+                },
+                Xaxis = new XAxis
+                {
+                    TickPlacement = TickPlacement.On,
+                    
+                   
+                    // Title = new AxisTitle { Text = "Assessment" },
+                    //TickAmount = 1,
+                },
+
+
+
+            };
+        if (_sdsrvc.SentimentStudentData != null)
+            Data = _sdsrvc.SentimentStudentData;
+        await Task.Delay(500);
+        StateHasChanged();
+
+    }
+
+
+}

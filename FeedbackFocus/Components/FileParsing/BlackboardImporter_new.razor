@@ -1,0 +1,186 @@
+﻿@using FeedbackFocus.Models
+@using FeedbackFocus.Services
+@using System.Text
+@using OfficeOpenXml
+
+@inject FeedbackService _feedbackService
+@inject AssessmentService _assessmentService
+@inject EmotionAnalysisService _sentimentAnalysisService
+@inject CsvParserFactory _csvParserFactory
+
+<label for="@AssessmentId" class="btn btn-primary">Import</label>
+<InputFile id="@AssessmentId" hidden class="btn btn-primary" OnChange="@LoadFiles" accept=".csv,.xls" />
+
+@if (!string.IsNullOrEmpty(ImportStatusMessage))
+{
+    <div class="alert alert-info">@ImportStatusMessage</div>
+}
+
+@code {
+    [Parameter]
+    public Guid AssessmentId { get; set; }
+    [Parameter]
+    public EventCallback OnProcessingComplete { get; set; }
+
+    private string ImportStatusMessage { get; set; } = string.Empty;
+
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        bool isXLS = e.File.Name.EndsWith(".xls", StringComparison.OrdinalIgnoreCase);
+        try
+        {
+            ImportStatusMessage = "Importing data, please wait...";
+            StateHasChanged();
+
+            var file = e.File;
+            string fileContent;
+
+            if (isXLS)
+            {
+                try
+                {
+                    // Fallback to XLS processing
+                    await ProcessAsXls(file);
+                }
+                catch
+                {
+
+                }
+
+            }
+            else
+            {
+                try
+                {
+                    // Attempt to parse as CSV
+                    fileContent = await ParseFileToStringAsync(file);
+
+                    // Process as CSV
+                    await ProcessAsCsv(fileContent);
+                }
+                catch
+                {
+                }
+
+            }
+
+
+            ImportStatusMessage = "Data import completed successfully!";
+            await OnProcessingComplete.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            if (isXLS)
+            {
+                ImportStatusMessage = $"Data import failed, only xls (csv) files that were exported from Blackboard are supported.";
+            }
+            else
+            {
+                ImportStatusMessage = $"Data import failed: {ex.Message}";
+            }
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task ProcessAsCsv(string fileContent)
+    {
+        string[] lines = fileContent.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+        var (separator, lms) = DetectLmsAndSeparator(lines);
+
+        var parser = _csvParserFactory.CreateParser(lms, separator, AssessmentId);
+        var rows = await parser.ParseFile(fileContent);
+        await parser.ProcessRows(rows);
+    }
+
+    private async Task ProcessAsXls(IBrowserFile file)
+    {
+        // Copy the InputFile stream to a MemoryStream
+        using var memoryStream = new MemoryStream();
+        await file.OpenReadStream().CopyToAsync(memoryStream);
+
+        // Reset the position of the memory stream
+        memoryStream.Position = 0;
+
+        // Use EPPlus to read the Excel file
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Ensure non-commercial license is set
+        using var package = new ExcelPackage(memoryStream);
+
+        var worksheet = package.Workbook.Worksheets[0]; // Assuming the first worksheet
+
+        var rows = new List<string[]>();
+
+        for (int row = 1; row <= worksheet.Dimension.Rows; row++)
+        {
+            var rowData = new List<string>();
+
+            for (int col = 1; col <= worksheet.Dimension.Columns; col++)
+            {
+                rowData.Add(worksheet.Cells[row, col].Text);
+            }
+
+            rows.Add(rowData.ToArray());
+        }
+
+        // Process rows as needed
+        foreach (var row in rows)
+        {
+            // Example: Log each row for debugging
+            Console.WriteLine(string.Join(", ", row));
+        }
+    }
+
+
+    private async Task<string> ParseFileToStringAsync(IBrowserFile file)
+    {
+        using var stream = file.OpenReadStream();
+        byte[] fileBytes;
+
+        using (var memoryStream = new MemoryStream())
+        {
+            await stream.CopyToAsync(memoryStream);
+            fileBytes = memoryStream.ToArray();
+        }
+
+        // Detect encoding
+        Encoding encoding = DetectEncoding(fileBytes) ?? Encoding.UTF8;
+
+        // Read content with detected encoding
+        using var reader = new StreamReader(new MemoryStream(fileBytes), encoding);
+        return await reader.ReadToEndAsync();
+    }
+
+    private Encoding DetectEncoding(byte[] fileBytes)
+    {
+        var result = UtfUnknown.CharsetDetector.DetectFromBytes(fileBytes);
+
+        if (result.Detected != null)
+        {
+            return result.Detected.Encoding;
+        }
+
+        // Fallback to UTF-8 if encoding is not detected
+        return Encoding.UTF8;
+    }
+
+    private (char separator, string lms) DetectLmsAndSeparator(string[] lines)
+    {
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (TryMatchColumns(line, ',', 9)) return (',', "Blackboard");
+            if (TryMatchColumns(line, ',', 11)) return (',', "Moodle");
+            if (TryMatchColumns(line, '\t', 9)) return ('\t', "Blackboard");
+            if (TryMatchColumns(line, '\t', 11)) return ('\t', "Moodle");
+        }
+        throw new Exception("Unable to determine LMS or separator.");
+    }
+
+    private bool TryMatchColumns(string line, char separator, int columnCount)
+    {
+        return line.Split(separator).Length == columnCount;
+    }
+}

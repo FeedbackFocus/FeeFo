@@ -1,0 +1,205 @@
+﻿@using CsvHelper
+@using CsvHelper.Configuration
+@using FeedbackFocus.Models
+@using FeedbackFocus.Services
+@using System.Text
+@using OfficeOpenXml
+@using System.Globalization
+
+@inject CsvParserFactory _csvParserFactory
+
+<label for="@AssessmentId" class="btn btn-primary">Import</label>
+<InputFile id="@AssessmentId" hidden class="btn btn-primary" OnChange="@LoadFiles" accept=".csv,.xls" />
+
+@if (!string.IsNullOrEmpty(ImportStatusMessage))
+{
+    <div class="alert alert-info">@ImportStatusMessage</div>
+}
+
+<!-- Modal -->
+@if (IsModalOpen)
+{
+    <div class="modal fade show" style="display:block; background:rgba(0, 0, 0, 0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Configure Headers</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+
+                        <div class="col-md-12">
+                            <h6>Mapped Fields</h6>
+                            @foreach (var field in SelectedHeaderMapping.Keys)
+                            {
+                                <div class="mb-3">
+                                    <label for="@field">@field Mapping:</label>
+                                    <select class="form-select" id="@field" style="height: 2.4rem;"
+                                            @onchange="(e) => OnSelectionChanged(field, e)">
+                                        <option value="-1">Select from file...</option>
+                                        @for (int i = 0; i < ParsedHeaders.Count; i++)
+                                        {
+                                            <option value="@i" selected="@(SelectedHeaderMapping[field] == i)">
+                                                @ParsedHeaders[i]
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                    <button class="btn btn-primary" @onclick="SaveConfiguration">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public Guid AssessmentId { get; set; }
+    [Parameter]
+    public EventCallback OnProcessingComplete { get; set; }
+
+    private string ImportStatusMessage { get; set; } = string.Empty;
+    private bool IsModalOpen { get; set; } = false;
+    private List<string> ParsedHeaders { get; set; } = new List<string>();
+
+    // Dictionary to store selected values for each static field
+    private Dictionary<string, int> SelectedHeaderMapping = new Dictionary<string, int>
+    {
+        { "Last Name", -1 }, // -1 means no selection
+        { "First Name", -1 },
+        { "Unique ID", -1 },
+        { "Grade", -1 },
+        { "Feedback", -1 }
+    };
+
+    // Handle selection change
+    private void OnSelectionChanged(string fieldName, ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int selectedIndex))
+        {
+            SelectedHeaderMapping[fieldName] = selectedIndex;
+        }
+    }
+
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        bool isXLS = e.File.Name.EndsWith(".xls", StringComparison.OrdinalIgnoreCase);
+        try
+        {
+            ImportStatusMessage = "Importing data, please wait...";
+            StateHasChanged();
+
+            var file = e.File;
+            string fileContent;
+
+            try
+            {
+                //Here we load the file content into a string
+                fileContent = await ParseFileToStringAsync(file);
+                //Here we use the csv parser to convert the data into a list of string arrays
+                var parsedData = ParseCsvText(fileContent);
+                ParsedHeaders = parsedData.FirstOrDefault()?.ToList() ?? new List<string>();
+                //Detect if the headers are moodle or blackboard
+
+                //If not moodle or blackboard, we will open the custom modal to allow the user to map the headers
+                
+                // Open modal
+                IsModalOpen = true;
+            }
+            catch
+            {
+                ImportStatusMessage = "Failed to parse the file.";
+            }
+
+            ImportStatusMessage = "Data import completed successfully!";
+        }
+        catch (Exception ex)
+        {
+            ImportStatusMessage = isXLS
+                ? "Data import failed, only xls (csv) files that were exported from Blackboard are supported."
+                : $"Data import failed: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void CloseModal()
+    {
+        IsModalOpen = false;
+    }
+
+    private void SaveConfiguration()
+    {
+        // Handle saving the header configuration here
+        IsModalOpen = false;
+    }
+
+    public static List<string[]> ParseCsvText(string csvText, bool hasHeader = true)
+    {
+        var rows = new List<string[]>();
+
+        using (var reader = new StringReader(csvText))
+        {
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = hasHeader,
+                };
+
+            using (var csv = new CsvReader(reader, config))
+            {
+                if (hasHeader && csv.Context.Reader.HeaderRecord != null)
+                {
+                    csv.Read();
+                    csv.ReadHeader();
+                }
+
+                while (csv.Read())
+                {
+                    var row = new List<string>();
+                    for (var i = 0; i < csv.Parser.Count; i++)
+                    {
+                        row.Add(csv.GetField(i));
+                    }
+                    rows.Add(row.ToArray());
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    private async Task<string> ParseFileToStringAsync(IBrowserFile file)
+    {
+        using var stream = file.OpenReadStream();
+        byte[] fileBytes;
+
+        using (var memoryStream = new MemoryStream())
+        {
+            await stream.CopyToAsync(memoryStream);
+            fileBytes = memoryStream.ToArray();
+        }
+
+        Encoding encoding = DetectEncoding(fileBytes) ?? Encoding.UTF8;
+
+        using var reader = new StreamReader(new MemoryStream(fileBytes), encoding);
+        return await reader.ReadToEndAsync();
+    }
+
+    private Encoding DetectEncoding(byte[] fileBytes)
+    {
+        var result = UtfUnknown.CharsetDetector.DetectFromBytes(fileBytes);
+
+        return result.Detected?.Encoding ?? Encoding.UTF8;
+    }
+}

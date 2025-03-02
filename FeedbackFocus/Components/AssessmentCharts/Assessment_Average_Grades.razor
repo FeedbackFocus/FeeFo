@@ -1,0 +1,135 @@
+﻿@using FeedbackFocus.Components.CourseCharts.HelperClasses
+@using FeedbackFocus.Services
+@inject AssessmentService _srvc
+@inject AssessmentDashboardService _cdsrvc
+
+@if (Data != null && Data.Count != 0)
+{
+    <ResizableChartComponent>
+        <ApexChart TItem="YearlyCourseGrades"
+                   Title="Average Grade in Assessment"
+                   Options="options">
+
+            @foreach (var series in Data.Select(x => x.Course).Distinct())
+            {
+                var courseCount = Data.Where(a => a.Course == series).Count();
+                @if (courseCount > 1)
+                {
+                <ApexPointSeries TItem="YearlyCourseGrades"
+                                 SeriesType="SeriesType.Line"
+                                 Items="@Data.Where(a=>a.Course == series)"
+                                 Name="@series"
+                                 XValue="@(e => e.Year)"
+                    YValue="@(e => Math.Round(e.Grade,2)*100)" />
+                } else
+                {
+                    <ApexPointSeries TItem="YearlyCourseGrades"
+                                     SeriesType="SeriesType.Scatter"
+                                     Items="@Data.Where(a=>a.Course == series)"
+                                     Name="@series"
+                                     XValue="@(e => e.Year)"
+                                     YValue="@(e => Math.Round(e.Grade,2)*100)" />
+                }
+
+        }
+        </ApexChart>
+    </ResizableChartComponent>
+}
+else
+{
+    <p>Loading data...</p>
+}
+
+@code {
+    private ApexChartOptions<YearlyCourseGrades> options;
+    private List<YearlyCourseGrades> Data { get; set; } = new();
+
+
+    private string GetYAxisLabel(int value)
+    {
+        return "$" + value.ToString("N0");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Data = _cdsrvc.AssessmentAverageGradeDistribution;
+
+            options = new ApexChartOptions<YearlyCourseGrades>
+                {
+                     Legend = new()
+                {
+                    Show = true,
+                    Position = LegendPosition.Top,
+                },
+                    Chart = new()
+                    {
+                        Toolbar = new()
+                        {
+                            Show = true,
+
+                            Tools = new()
+                            {
+                                Reset = true,
+                                Download = true,
+                                Selection = true,
+                                Zoom = true,
+                                Pan = true,
+                                Zoomin = true,
+                                Zoomout = true,
+
+                            },
+                            
+                        },
+                        
+                    },
+                    Markers = new Markers
+                    {
+                        Size = 8
+                    },
+                    Yaxis = new List<YAxis>
+                    {
+                        new YAxis
+                        {
+                            Min = 0,
+                            Max = 100,
+                            Title = new AxisTitle { Text = "Average Grade" }
+                        }
+                    },
+                    Xaxis = new XAxis
+                    {
+                        Type = XAxisType.Category,
+                        Title = new AxisTitle { Text = "Year" },
+                        // Categories = Data.Select(x => x.Year.ToString()).Distinct().ToArray(),
+                        TickAmount = Data.Select(x => x.Year).Distinct().Count(),
+                        Labels = new XAxisLabels
+                        {
+                            Formatter = @"function (value) {
+                        if (value === undefined) { return ''; }
+                        return Math.floor(value);
+                    }"
+                        }
+                    }
+                };
+
+           
+
+
+
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing chart: {ex.Message}");
+        }
+    }
+
+    public class AverageGradeByYear
+    {
+        public int Year { get; set; }
+        public decimal AverageGrade { get; set; }
+    }
+
+}

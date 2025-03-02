@@ -1,0 +1,113 @@
+﻿@page "/AssessmentStatsInfo"
+@using System.Collections;
+@using CsvHelper;
+@using System.Globalization;
+@using CsvHelper.Configuration;
+@using FeedbackFocus.Components.FileParsing
+@using FeedbackFocus.Models;
+@using Microsoft.VisualBasic.FileIO;
+@using BlazorBootstrap
+
+
+@inject FeedbackFocus.Services.AssessmentDashboardService _assessmentDashboardService;
+
+
+<div class="d-flex align-items-center">
+    <button class="btn" onclick="window.history.back();">
+        <span class="oi oi-arrow-thick-left" aria-hidden="true"></span>
+    </button>
+    <h3 class="mb-0 ml-2">Assessment Feedback</h3>
+</div>
+
+@foreach (var course in _assessmentDashboardService.CourseData)
+{
+    @foreach (var assessment in course.Assessments)
+    {
+        var feedbackWordCounts = assessment.Feedback.Select(f => f.FeedbackToLearner.Split(' ').Length).ToList();
+
+        var averageWords = feedbackWordCounts.Any() ? Math.Round((decimal)feedbackWordCounts.Average(), 2) : 0;
+        var minWords = feedbackWordCounts.Any() ? feedbackWordCounts.Min() : 0;
+        var maxWords = feedbackWordCounts.Any() ? feedbackWordCounts.Max() : 0;
+        var variance = feedbackWordCounts.Any() ? feedbackWordCounts.Average(v => Math.Pow(v - feedbackWordCounts.Average(), 2)) : 0;
+        var standardDeviationWords = Math.Round((decimal)Math.Sqrt(variance), 2);
+
+        <h4>Assessment: @assessment.Name</h4>
+        <table class="table table-striped table-bordered table-hover table-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Average Words</th>
+                    <th>Minimum Words</th>
+                    <th>Maximum Words</th>
+                    <th>Standard Deviation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>@averageWords</td>
+                    <td>@minWords</td>
+                    <td>@maxWords</td>
+                    <td>@standardDeviationWords</td>
+                </tr>
+            </tbody>
+        </table>
+
+
+
+         <BlazorBootstrap.Grid TItem="FeedbackItem"
+                              Class="table table-hover table-bordered table-striped"
+                              Data="assessment.Feedback"
+                              AllowFiltering="false"
+                              AllowPaging="false"
+                     
+                              AllowSorting="true"
+                              AllowSelection="false"
+                              Responsive="true">
+            <GridColumns>
+                <GridColumn TItem="FeedbackItem" HeaderText="Username" PropertyName="Username" SortKeySelector="item => item.Username">
+                    @context.Username
+                </GridColumn>
+                <GridColumn TItem="FeedbackItem" HeaderText="Feedback" PropertyName="Feedback" SortKeySelector="item => item.FeedbackToLearner">
+                    @context.FeedbackToLearner
+                </GridColumn>
+            </GridColumns>
+
+        </BlazorBootstrap.Grid>
+    }
+}
+
+
+
+
+
+
+
+
+
+
+@code {
+    public bool ShowBackdrop = false;
+    bool analysis = false;
+    [Parameter]
+    public string AssessmentId { get; set; }
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    List<FeedbackItem> lstItems = new();
+    List<AnalysisItem> lstAnalysis = new();
+    private FeedbackItem? currentFeedbackItem = null;
+    private FeedbackFocus.Components.AddFeedbackItemModal Modal { get; set; }
+    private FeedbackFocus.Components.EditFeedbackItemModal EditModal { get; set; }
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        base.OnInitializedAsync();
+
+
+        StateHasChanged();
+
+
+    }
+}

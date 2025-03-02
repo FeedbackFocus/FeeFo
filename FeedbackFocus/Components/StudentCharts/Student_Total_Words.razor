@@ -1,0 +1,110 @@
+﻿@using FeedbackFocus.Components.CourseCharts.HelperClasses
+@using FeedbackFocus.Services
+@inject AssessmentService _srvc
+@inject StudentDashboardService _cdsrvc
+
+@if (Data != null && Data.Count > 0)
+{
+    <ResizableChartComponent>
+        <ApexChart TItem="YearlyCourseFeedbackWords"
+                   Title="Total Words in Feedback by Student"
+                   Options="options">
+
+            @foreach (var series in Data.Select(x => x.Course).Distinct())
+            {
+                <ApexPointSeries TItem="YearlyCourseFeedbackWords"
+                                 SeriesType="SeriesType.Treemap"
+                                 Items="@Data.Where(a=>a.Course == series)"
+                                 Name="@series"
+                                 XValue="@(e => e.Course + " "+e.Year)"
+                                 YValue="@(e => e.WordCount)"
+                                 />
+
+            }
+        </ApexChart>
+    </ResizableChartComponent>
+}
+else
+{
+    <p>Loading data...</p>
+}
+
+@code {
+    private ApexChartOptions<YearlyCourseFeedbackWords> options;
+    private List<YearlyCourseFeedbackWords> Data { get; set; } = new();
+    private string GetYAxisLabel(int value)
+    {
+        return "$" + value.ToString("N0");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            options = new ApexChartOptions<YearlyCourseFeedbackWords>
+                {
+                    Chart = new()
+                    {
+                 
+                        Toolbar = new()
+                        {
+                            Show = true,
+
+                            Tools = new()
+                            {
+                                Reset = true,
+                                Download = true,
+                                Selection = true,
+                                Zoom = true,
+                                Pan = true,
+                                Zoomin = true,
+                                Zoomout = true,
+
+                            },
+
+                        },
+
+                    },
+                    Markers = new Markers
+                    {
+                        Size = 12
+                    },
+                    Yaxis = new List<YAxis>
+                    {
+                        new YAxis
+                        {
+                            Min = 0,
+                            Max = 50,
+                            Title = new AxisTitle { Text = "Total Words" }
+                        }
+                    },
+                    Xaxis = new XAxis
+                    {
+                        Type = XAxisType.Numeric,
+                        Title = new AxisTitle { Text = "Year" },
+                        TickAmount = 1,
+                        Labels = new XAxisLabels
+                        {
+                            Formatter = @"function (value) {
+                        if (value === undefined) { return ''; }
+                        return Math.floor(value);
+                    }"
+                        }
+                    }
+                };
+
+            Data = _cdsrvc.YearlyStudentFeedbackWords;
+
+
+
+            await Task.Delay(500);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing chart: {ex.Message}");
+        }
+    }
+
+
+}

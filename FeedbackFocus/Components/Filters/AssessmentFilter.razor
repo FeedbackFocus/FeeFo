@@ -1,0 +1,275 @@
+﻿@using FeedbackFocus.Models
+@using FeedbackFocus.Services
+@inject AssessmentService _assessmentService;
+@inject CourseService _courseService;
+@inject FilterService _filterService;
+@inject AssessmentDashboardService _assessmentDashboardService;
+@inject NavigationManager _navigationManager;
+
+<div class="row">
+    <div class="col-12 mb-1">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 mb-2">
+                        <h6>Filter Data</h6>
+                    </div>
+                    @if (assessmentList != null && assessmentList.Count > 0 && _assessmentDashboardService.ready == true)
+                    {
+                        <div class="d-flex flex-wrap">
+                            <div class="me-1">
+                                <Dropdown>
+                                    <DropdownToggle Color="Blazorise.Color.Primary" Size="Blazorise.Size.Small">
+                                        Assessment
+                                    </DropdownToggle>
+                                    <DropdownMenu>
+                                        <!-- Select All and Unselect All Buttons -->
+                                        <div class="d-flex justify-content-between px-2 py-1">
+                                            <Button Class="btn btn-link" @onclick="() => SelectAllAssessments(true)" Size="Blazorise.Size.Small">Select All</Button>
+                                            <Button Class="btn btn-link" @onclick="() => SelectAllAssessments(false)" Size="Blazorise.Size.Small">Unselect All</Button>
+                                        </div>
+                                        <hr />
+                                        @foreach (var item in assessmentList)
+                                        {
+
+                                            @if (!_filterService.AssessmentNameExcluded.Contains(item))
+                                            {
+                                                <DropdownItem ShowCheckbox Checked="true" CheckedChanged="(e)=>FilterAssessment(true,item)">
+                                                    @item
+                                                </DropdownItem>
+                                            }
+                                            else
+                                            {
+                                                <DropdownItem ShowCheckbox Checked="false" CheckedChanged="(e)=>FilterAssessment(false,item)">
+                                                    @item
+                                                </DropdownItem>
+                                            }
+
+                                        }
+
+                                    </DropdownMenu>
+                                </Dropdown>
+                            </div>
+
+
+
+                            <div class="me-1">
+                                <Dropdown>
+                                    <DropdownToggle Color="Blazorise.Color.Primary" Size="Blazorise.Size.Small">
+                                        Course
+                                    </DropdownToggle>
+                                    <DropdownMenu>
+                                        <!-- Select All and Unselect All Buttons -->
+                                        <div class="d-flex justify-content-between px-2 py-1">
+                                            <Button Class="btn btn-link" @onclick="() => SelectAllCourses(true)" Size="Blazorise.Size.Small">Select All</Button>
+                                            <Button Class="btn btn-link" @onclick="() => SelectAllCourses(false)" Size="Blazorise.Size.Small">Unselect All</Button>
+                                        </div>
+                                        <hr />
+                                        @foreach (var item in courseList.Distinct())
+                                        {
+                                            @if (!_filterService.AssessmentCourseExcluded.Contains(item))
+                                            {
+                                                <DropdownItem ShowCheckbox Checked="true" CheckedChanged="(e)=>FilterCourse(true,item)">
+                                                    @item
+                                                </DropdownItem>
+                                            }
+                                            else
+                                            {
+                                                <DropdownItem ShowCheckbox Checked="false" CheckedChanged="(e)=>FilterCourse(false,item)">
+                                                    @item
+                                                </DropdownItem>
+                                            }
+
+                                        }
+
+                                    </DropdownMenu>
+                                </Dropdown>
+                            </div>
+
+                            <div class="me-1">
+                                <Dropdown>
+                                    <DropdownToggle Color="Blazorise.Color.Primary" Size="Blazorise.Size.Small">
+                                        Year
+                                    </DropdownToggle>
+                                    <DropdownMenu>
+                                        <!-- Select All and Unselect All Buttons -->
+                                        <div class="d-flex justify-content-between px-2 py-1">
+                                            <Button Class="btn btn-link" @onclick="() => SelectAllYears(true)" Size="Blazorise.Size.Small">Select All</Button>
+                                            <Button Class="btn btn-link" @onclick="() => SelectAllYears(false)" Size="Blazorise.Size.Small">Unselect All</Button>
+                                        </div>
+                                        <hr />
+                                        @foreach (var item in yearList)
+                                        {
+                                            @if (!_filterService.AssessmentYearExcluded.Contains(item))
+                                            {
+                                                <DropdownItem ShowCheckbox Checked="true" CheckedChanged="(e)=>FilterYear(true,item)">
+                                                    @item
+                                                </DropdownItem>
+                                            }
+                                            else
+                                            {
+                                                <DropdownItem ShowCheckbox Checked="false" CheckedChanged="(e)=>FilterYear(false,item)">
+                                                    @item
+                                                </DropdownItem>
+                                            }
+
+                                        }
+
+                                    </DropdownMenu>
+                                </Dropdown>
+                            </div>
+                            <div class="me-1">
+                                <Dropdown>
+                                    <DropdownToggle Color="Blazorise.Color.Primary" Size="Blazorise.Size.Small">
+                                        Semester
+                                    </DropdownToggle>
+                                    <DropdownMenu>
+                                        <!-- Select All and Unselect All Buttons -->
+                                        <div class="d-flex justify-content-between px-2 py-1">
+                                            <Button Class="btn btn-link" @onclick="() => SelectAllSemesters(true)" Size="Blazorise.Size.Small">Select All</Button>
+                                            <Button Class="btn btn-link" @onclick="() => SelectAllSemesters(false)" Size="Blazorise.Size.Small">Unselect All</Button>
+                                        </div>
+                                        <hr />
+                                        @foreach (var item in semesterList)
+                                        {
+                                            @if (!_filterService.AssessmentSemesterExcluded.Contains(item))
+                                            {
+                                                <DropdownItem ShowCheckbox Checked="true" CheckedChanged="(e)=>FilterSemester(true,item)">
+                                                    @item
+                                                </DropdownItem>
+                                            }
+                                            else
+                                            {
+                                                <DropdownItem ShowCheckbox Checked="false" CheckedChanged="(e)=>FilterSemester(false,item)">
+                                                    @item
+                                                </DropdownItem>
+                                            }
+
+                                        }
+                                    </DropdownMenu>
+                                </Dropdown>
+                            </div>
+                            <div class="me-1">
+                                <Button Class="btn btn-success" @onclick="RefreshAssessmentDashboard" Size="Blazorise.Size.Small">Apply</Button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+    private List<string> assessmentList = new();
+    private List<string> courseList = new();
+    private List<int> yearList = new();
+    private List<Semester> semesterList = new();
+    private async Task RefreshAssessmentDashboard()
+    {
+        await _assessmentDashboardService.RefreshBaseAssessmentDashboardData();
+        _navigationManager.NavigateTo("/refresh-filter/Assessment");
+    }
+
+    private void FilterAssessment(bool e, string courseCode)
+    {
+        if (e)
+            _filterService.AssessmentNameExcluded.Add(courseCode);
+        else
+            _filterService.AssessmentNameExcluded.Remove(courseCode);
+        StateHasChanged();
+    }
+
+    private void FilterCourse(bool e, string courseCode)
+    {
+        if (e)
+            _filterService.AssessmentCourseExcluded.Add(courseCode);
+        else
+            _filterService.AssessmentCourseExcluded.Remove(courseCode);
+        StateHasChanged();
+    }
+
+    private void FilterYear(bool e, int courseCode)
+    {
+        if (e)
+            _filterService.AssessmentYearExcluded.Add(courseCode);
+        else
+            _filterService.AssessmentYearExcluded.Remove(courseCode);
+        StateHasChanged();
+    }
+
+
+    private void FilterSemester(bool e, Semester courseCode)
+    {
+        if (e)
+            _filterService.AssessmentSemesterExcluded.Add(courseCode);
+        else
+            _filterService.AssessmentSemesterExcluded.Remove(courseCode);
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _filterService.InitializeAsync();
+        assessmentList = _filterService.Assessments;
+        courseList = _filterService.Courses;
+
+        yearList = _filterService.Years;
+        semesterList = _filterService.Semesters;
+
+    }
+    private void SelectAllAssessments(bool select)
+    {
+        if (select)
+        {
+            _filterService.AssessmentNameExcluded.Clear(); // Select all by clearing the exclusions
+        }
+        else
+        {
+            _filterService.AssessmentNameExcluded = new List<string>(assessmentList); // Unselect all by excluding all
+        }
+        StateHasChanged();
+    }
+
+    private void SelectAllCourses(bool select)
+    {
+        if (select)
+        {
+            _filterService.AssessmentCourseExcluded.Clear(); // Select all by clearing the exclusions
+        }
+        else
+        {
+            _filterService.AssessmentCourseExcluded = new List<string>(courseList); // Unselect all by excluding all
+        }
+        StateHasChanged();
+    }
+
+    private void SelectAllYears(bool select)
+    {
+        if (select)
+        {
+            _filterService.AssessmentYearExcluded.Clear(); // Select all by clearing the exclusions
+        }
+        else
+        {
+            _filterService.AssessmentYearExcluded = new List<int>(yearList); // Unselect all by excluding all
+        }
+        StateHasChanged();
+    }
+
+    private void SelectAllSemesters(bool select)
+    {
+        if (select)
+        {
+            _filterService.AssessmentSemesterExcluded.Clear(); // Select all by clearing the exclusions
+        }
+        else
+        {
+            _filterService.AssessmentSemesterExcluded = new List<Semester>(semesterList); // Unselect all by excluding all
+        }
+        StateHasChanged();
+    }
+}
+    

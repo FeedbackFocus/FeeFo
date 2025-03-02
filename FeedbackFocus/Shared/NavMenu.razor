@@ -1,0 +1,68 @@
+﻿@using FeedbackFocus.Data;
+@using FeedbackFocus.Components;
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">FeedbackFocus</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link ps-2" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link ps-2" href="courses">
+                <span class="oi oi-plus" aria-hidden="true"></span> Data Management
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link ps-2" href="course-dashboard">
+                <span class="oi oi-aperture" aria-hidden="true"></span> Course Dashboard
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link ps-2" href="assessment-dashboard">
+                <span class="oi oi-script" aria-hidden="true"></span> Assessment Dashboard
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link ps-2" href="student-dashboard">
+                <span class="oi oi-person" aria-hidden="true"></span> Student Dashboard
+            </NavLink>
+        </div>
+        <DatabaseBackupComponent />
+        <div class="nav-item px-3">
+            <NavLink class="nav-link ps-2" href="eula">
+                <span class="oi oi-lock-locked" aria-hidden="true"></span> EULA
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private FeedbackFocus.Components.BackupComponent bl { get; set; }
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    //course-dashboard
+  
+
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        //if (bl == null)
+        //    bl = new();
+        //   await  bl.RefreshAsync();
+        base.OnAfterRenderAsync(firstRender);
+    }
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

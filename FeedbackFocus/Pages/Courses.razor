@@ -1,0 +1,120 @@
+﻿@page "/courses"
+@inject FeedbackFocus.Services.CourseService _courseService;
+@inject NavigationManager _navManager
+@using FeedbackFocus.Components
+@using FeedbackFocus.Data;
+@using FeedbackFocus.Models;
+@using FeedbackFocus.Services;
+
+<PageTitle>Courses</PageTitle>
+
+<h1>Course List</h1>
+
+<button class="btn btn-primary" @onclick="AddCourse">Add New Course</button>
+<FeedbackFocus.Components.AddCourseModal @ref="Modal" OnClose="RefreshCourses"></FeedbackFocus.Components.AddCourseModal>
+<FeedbackFocus.Components.EditCourseModal @ref="ModalEdit" OnClose="RefreshCourses"></FeedbackFocus.Components.EditCourseModal>
+
+
+<div class="d-flex flex-wrap">
+    @foreach (var x in courseList)
+    {
+        <div class="card m-2" style="width: 18rem;">
+            <div style="position: absolute; top: 5px; right: 5px;">
+                <button class="btn btn-primary btn-sm" @onclick="() => EditCourse(x)">
+                    <span class="oi oi-pencil"></span> <!-- or use an appropriate icon -->
+                </button>
+            </div>
+            <div class="card-body">
+                <p>@x.Name
+                    <br>
+                @x.CourseCode
+                <br>
+                @x.Semester.ToString(), @x.Year</p>
+                <br />
+                Assessments Count: @x.Assessments.Count()
+                <button class="btn btn-primary" @onclick="() => FindCourseAssignment(x)">Assessments</button>
+                <button class="btn btn-danger" @onclick="() =>ShowDelete(x)">Delete</button>
+
+            </div>
+        </div>
+    }
+</div>
+
+<DeleteModal @ref="DeleteModal" OnClose="RefreshCourses" />
+
+@code {
+    private FeedbackFocus.Components.AddCourseModal Modal { get; set; }
+    private FeedbackFocus.Components.EditCourseModal ModalEdit { get; set; }
+    private DeleteModal DeleteModal;
+
+    private int currentCount = 0;
+
+    private List<Course> courseList = new();
+    private async Task FindCourseAssignment(Course crs)
+    {
+        _navManager.NavigateTo($"/CourseAssignments/{crs.Id}");
+    }
+    private async Task<bool> Delete(Guid Id)
+    {
+        var ret = await _courseService.Delete(Id);
+        courseList = null;
+        courseList = (await _courseService.GetCourses()).ToList();
+        StateHasChanged();
+        return ret;
+    }
+
+    public async Task ShowDelete(dynamic obj)
+    {
+        DeleteModal.SetObject(obj);
+        DeleteModal.Open();
+    }
+
+    protected async override Task OnInitializedAsync()
+    {
+        try
+        {
+            courseList = (await _courseService.GetCourses()).ToList();
+        }
+        catch (Exception ex)
+        {
+            courseList = new List<Course>();
+        }
+        base.OnInitializedAsync();
+    }
+    private async void IncrementCount()
+    {
+        currentCount++;
+
+        StateHasChanged();
+    }
+
+    private async void AddCourse()
+    {
+        Modal.Open();
+        await RefreshCourses();
+        courseList = (await _courseService.GetCourses()).ToList();
+        StateHasChanged();
+    }
+    private async void EditCourse(Course c)
+    {
+        ModalEdit.Open(c);
+        await RefreshCourses();
+        courseList = (await _courseService.GetCourses()).ToList();
+        StateHasChanged();
+    }
+    private async Task RefreshCourses()
+    {
+
+        var tmp = (await _courseService.GetCourses()).ToList();
+        if(tmp is null || tmp.Count == 0)
+        {
+            courseList = new List<Course>();
+            return;
+        }else
+        {
+            courseList = tmp;
+        }
+
+        StateHasChanged();
+    }
+}

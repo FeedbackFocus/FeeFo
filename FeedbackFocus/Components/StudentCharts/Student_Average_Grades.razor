@@ -1,0 +1,162 @@
+﻿@using FeedbackFocus.Components.CourseCharts.HelperClasses
+@using FeedbackFocus.Services
+@inject AssessmentService _srvc
+@inject StudentDashboardService _cdsrvc
+
+@if (Data != null && Data.Count != 0)
+{
+    <ResizableChartComponent>
+        <ApexChart TItem="YearlyCourseGrades"
+                   Title="Average Grade by Student"
+                   Options="options">
+
+              @foreach (var series in Data.Select(x => x.Year).Distinct())
+            {  
+                @* var courseCount = Data
+                .GroupBy(ycg => new { ycg.Course, ycg.Year })
+                .Select(g => new
+                {
+                    Course = g.Key.Course,
+                    Year = g.Key.Year,
+                    AverageGrade = g.Average(ycg => ycg.Grade)
+                })
+                .ToList(); *@
+                <ApexPointSeries TItem="YearlyCourseGrades"
+                                 SeriesType="SeriesType.Scatter"
+                                 Items="@Data.Where(z => z.Year == series)"
+                                    Name="@series.ToString()"
+                                 XValue="@(e => e.Course)"
+                                 YValue="@(e => Math.Round(e.Grade,2)*100)"
+                                 
+                             />
+
+               @*  @if (courseCount > 1)
+                {
+                <ApexPointSeries TItem="YearlyCourseGrades"
+                                 SeriesType="SeriesType.Line"
+                                 Items="@Data.Where(a=>a.Course == series)"
+                                 Name="@series"
+                                 XValue="@(e => e.Year)"
+                    YValue="@(e => Math.Round(e.Grade,2)*100)" />
+                } else
+                {
+                    <ApexPointSeries TItem="YearlyCourseGrades"
+                                     SeriesType="SeriesType.Scatter"
+                                     Items="@Data.Where(a=>a.Course == series)"
+                                     Name="@series"
+                                     XValue="@(e => e.Year)"
+                                     YValue="@(e => Math.Round(e.Grade,2)*100)" />
+                } *@
+
+          }  
+        </ApexChart>
+    </ResizableChartComponent>
+}
+else
+{
+    <p>Loading data...</p>
+}
+
+@code {
+    private ApexChartOptions<YearlyCourseGrades> options;
+    private List<YearlyCourseGrades> Data { get; set; } = new();
+
+
+    private string GetYAxisLabel(int value)
+    {
+        return "$" + value.ToString("N0");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Data = Data
+           .GroupBy(ycg => new { ycg.Course, ycg.Year })
+           .Select(g => new YearlyCourseGrades
+               {
+                   Course = g.Key.Course,
+                   Year = g.Key.Year,
+                   Grade = Math.Round(g.Average(ycg => ycg.Grade), 2) * 100
+               })
+           .ToList();
+
+
+        try
+        {
+            options = new ApexChartOptions<YearlyCourseGrades>
+                {
+                    Legend = new()
+                    {
+                        Show = true,
+                        Position = LegendPosition.Top,
+                    },
+                    Chart = new()
+                    {
+                        
+                       
+                        Toolbar = new()
+                        {
+                            Show = true,
+
+                            Tools = new()
+                            {
+                                Reset = true,
+                                Download = true,
+                                Selection = true,
+                                Zoom = true,
+                                Pan = true,
+                                Zoomin = true,
+                                Zoomout = true,
+
+                            },
+
+                        },
+
+                    },
+                    Markers = new Markers
+                    {
+                        Size = 8
+                    },
+                    Yaxis = new List<YAxis>
+                    {
+                        new YAxis
+                        {
+                            Min = 0,
+                            Max = 120,
+                            Title = new AxisTitle { Text = "Average Grade by Year" }
+                        }
+                    },
+                    Xaxis = new XAxis
+                    {
+                        Type = XAxisType.Numeric,
+                        
+                        // TickAmount = 1,
+                        Labels = new XAxisLabels
+                        {
+                    //         Formatter = @"function (value) {
+                    //     if (value === undefined) { return ''; }
+                    //     return Math.floor(value);
+                    // }"
+                        }
+                    }
+                };
+
+            Data = _cdsrvc.StudentAverageGradeDistribution;
+
+
+
+            await Task.Delay(500);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing chart: {ex.Message}");
+        }
+    }
+
+    public class AverageGradeByYear
+    {
+        public int Year { get; set; }
+        public decimal AverageGrade { get; set; }
+    }
+
+}

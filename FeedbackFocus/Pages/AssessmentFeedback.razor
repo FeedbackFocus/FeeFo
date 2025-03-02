@@ -1,0 +1,246 @@
+﻿@page "/assessmentfeedback/{AssessmentId}"
+@using System.Collections;
+@using CsvHelper;
+@using System.Globalization;
+@using CsvHelper.Configuration;
+@using FeedbackFocus.Components.FileParsing
+@using FeedbackFocus.Models;
+@using Microsoft.VisualBasic.FileIO;
+@using BlazorBootstrap
+@using System.Text.RegularExpressions
+
+
+@inject FeedbackFocus.Services.FeedbackService _feedbackService;
+@inject FeedbackFocus.Services.EmotionAnalysisService _emotionAnalysisService;
+@inject FeedbackFocus.Services.SentimentAnalysisService _sentimentAnalysisService;
+
+
+<div class="d-flex align-items-center">
+    <button class="btn" onclick="window.history.back();">
+        <span class="oi oi-arrow-thick-left" aria-hidden="true"></span>
+    </button>
+    <h3 class="mb-0 ml-2">Assessment Feedback</h3>
+</div>
+<BlackboardImporter AssessmentId="@Guid.Parse(AssessmentId)" OnProcessingComplete="RefreshFeedback" />
+<FeedbackFocus.Components.AddFeedbackItemModal @ref="Modal" AssessmentId="@Guid.Parse(AssessmentId)" OnClose="RefreshFeedback"></FeedbackFocus.Components.AddFeedbackItemModal>
+<FeedbackFocus.Components.EditFeedbackItemModal @ref="EditModal" OnClose="RefreshFeedback" />
+<button class="btn btn-primary m-1" @onclick="() => Modal.Open()">Add Feedback Item</button>
+<button class="btn btn-primary m-1" @onclick="() => RefreshFeedback()">Refresh</button>
+
+@if (lstItems is not null && lstItems.Count() != 0)
+{
+    @if (analysis)
+    {
+        <BlazorBootstrap.Progress ProgressBarType="ProgressBarType.Striped" Value="@progressValue" Max="100" Class="mt-3" />
+        <h4>Analyzing... (@progressValue)%</h4>
+
+    } else
+    {
+        
+        <button  class="btn btn-primary" @onclick="AnalyzeAll">Analyze All</button>
+    }
+
+    <BlazorBootstrap.Grid TItem="FeedbackItem"
+                          Class="table table-hover table-bordered table-striped"
+                          Data="lstItems"
+                          AllowFiltering="false"
+                          AllowPaging="false"
+                          AllowSorting="true"
+                          AllowSelection="false"
+                          SelectionMode="GridSelectionMode.Multiple"
+                          Responsive="true">
+        <GridColumns>
+            <GridColumn TItem="FeedbackItem" HeaderText="Username" PropertyName="Username" SortKeySelector="item => item.Username">
+                @context.Username
+            </GridColumn>
+            <GridColumn TItem="FeedbackItem" HeaderText="Feedback" PropertyName="Feedback" SortKeySelector="item => item.FeedbackToLearner">
+                @(RemoveHTMLMarkup(context.FeedbackToLearner))
+            </GridColumn>
+            <GridColumn TItem="FeedbackItem" HeaderText="Analysis">
+                @if (_emotionAnalysisService.GetEmotionAnalysis(context).Result.Count() == 0)
+                {
+                    <p>🚫</p>
+                }
+                else
+                {
+                    <p>✔</p>
+                }
+                @if (_emotionAnalysisService.GetSentimentAnalysis(context).Result.Count() == 0)
+                {
+                    <p>🚫</p>
+                }
+                else
+                {
+                    <p>✔</p>
+                }
+            </GridColumn>
+            <GridColumn TItem="FeedbackItem" HeaderText="Modify">
+                <button class="btn btn-primary" @onclick="()=>OpenEdit(context)"><span class="oi oi-pencil"></span></button>
+                <button class="btn btn-danger" @onclick="()=>OpenDelete(context)"><span class="oi oi-trash"></span></button>
+            </GridColumn>
+        </GridColumns>
+    </BlazorBootstrap.Grid>
+}
+
+<div class="modal @ModalClass" tabindex="-1" role="dialog" style="display:@ModalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => Close()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <p>Are you sure you wish to delete this record?</p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" @onclick="Delete">Delete</button>
+                <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+@if (ShowBackdrop)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    public bool ShowBackdrop = false;
+    bool analysis = false;
+    bool hideButton = false;
+    public int progressValue = 0;
+    private string errorMessage = string.Empty;
+    [Parameter]
+    public string AssessmentId { get; set; }
+
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    List<FeedbackItem> lstItems = new();
+    List<AnalysisItem> lstAnalysis = new();
+
+    private FeedbackItem? currentFeedbackItem = null;
+    private FeedbackFocus.Components.AddFeedbackItemModal Modal { get; set; }
+    private FeedbackFocus.Components.EditFeedbackItemModal EditModal { get; set; }
+
+    private async Task RunEmotionAnalysis(FeedbackItem f)
+    {
+            hideButton = true;
+            await _emotionAnalysisService.AnalyzeAssignmentFeedback(f);
+            hideButton = false;
+        
+       
+    }
+
+    private async Task RunSentimentAnalysis(FeedbackItem f)
+    {
+
+            await _sentimentAnalysisService.AnalyzeAssignmentFeedback(f);
+            hideButton = false;
+
+    }
+
+    private async Task RefreshFeedback()
+    {
+        await Task.Delay(500);
+        lstItems = (await _feedbackService.GetFeedback()).Where(x => x.AssessmentId.ToString() == this.AssessmentId).ToList();
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        base.OnInitializedAsync();
+        lstItems = await _feedbackService.GetFeedback();
+        lstItems = lstItems.Where(x => x.AssessmentId.ToString() == this.AssessmentId).ToList();
+        StateHasChanged();
+    }
+
+
+    private async void AnalyzeAll()
+    {
+        analysis = true;
+        int totalItems = lstItems.Count();
+        int processedItems = 0;
+        errorMessage = string.Empty; // Reset the error message before starting
+        StateHasChanged();
+
+        try
+        {
+            foreach (var x in lstItems)
+            {
+                if (_emotionAnalysisService.GetEmotionAnalysis(x).Result.Count() == 0 && !string.IsNullOrEmpty(x.FeedbackToLearner))
+                {
+                    await RunEmotionAnalysis(x);
+                }
+
+                if (_emotionAnalysisService.GetSentimentAnalysis(x).Result.Count() == 0 && !string.IsNullOrEmpty(x.FeedbackToLearner))
+                {
+                    await RunSentimentAnalysis(x);
+                }
+
+                processedItems++;
+                progressValue = (int)((double)processedItems / totalItems * 100);
+                StateHasChanged();
+            }
+
+            lstItems = (await _feedbackService.GetFeedback())
+                .Where(x => x.AssessmentId.ToString() == this.AssessmentId).ToList();
+        }
+        catch (Exception ex)
+        {
+            // Log the exception if necessary
+            errorMessage = "The API server is busy or unavailable. Please try again later.";
+            // Optionally, you can inspect the exception to provide more specific error messages
+            Console.WriteLine($"Error occurred: {ex.Message}");
+        }
+        finally
+        {
+            analysis = false;
+            progressValue = 100;
+            StateHasChanged();
+        }
+    }
+
+
+    private async void Delete()
+    {
+        await _feedbackService.Delete(currentFeedbackItem.Id);
+        lstItems = (await _feedbackService.GetFeedback()).Where(x => x.AssessmentId.ToString() == this.AssessmentId).ToList();
+        await Close();
+        StateHasChanged();
+    }
+
+    public void OpenDelete(FeedbackItem item)
+    {
+        currentFeedbackItem = item;
+        ModalDisplay = "block;";
+        ShowBackdrop = true;
+        ModalClass = "Show";
+        StateHasChanged();
+    }
+
+    public void OpenEdit(FeedbackItem item)
+    {
+        currentFeedbackItem = item;
+        EditModal.Open(item);
+        StateHasChanged();
+    }
+
+    public async Task Close()
+    {
+        ModalDisplay = "none";
+        ModalClass = "";
+        ShowBackdrop = false;
+       
+        StateHasChanged();
+    }
+    static string RemoveHTMLMarkup(string text)
+    {
+        return Regex.Replace(Regex.Replace(text, "<.+?>", string.Empty), "&.+?;", string.Empty);
+    }
+}
